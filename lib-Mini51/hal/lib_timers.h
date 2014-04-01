@@ -15,14 +15,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// this is the file that is used to configure the software.  Uncomment the appropriate lines by removing the // in front of them.
-// Configuration works with a lot of defaults.  The only thing you really need to choose is the control board.  After that,
-// all defaults will be chosen for that board.  If you want to use other than defaults, then uncomment the things you want
-// to change.  To see what the defaults are, look in defs.h
-// The options are defined in options.h
+#pragma once
 
-#ifdef V202_BUILD
-#include "config_V202.h"
-#else
-#include "config_STM32.h"
-#endif
+void lib_timers_init(void);
+unsigned long lib_timers_starttimer(void);
+unsigned long lib_timers_gettimermicroseconds(unsigned long starttime);
+unsigned long lib_timers_gettimermicrosecondsandreset(unsigned long *starttime);
+void    lib_timers_delaymilliseconds(unsigned long delaymilliseconds);

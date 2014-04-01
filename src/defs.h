@@ -36,9 +36,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef MULTIWII_CONFIG_SERIAL_PORTS
 #define MULTIWII_CONFIG_SERIAL_PORTS SERIALPORT0+SERIALPORT3
 #endif
+#ifndef GPS_TYPE
 #define GPS_TYPE SERIAL_GPS
 #define GPS_SERIAL_PORT 2
 #define GPS_BAUD 38400
+#endif
 
 #define RXNUMCHANNELS 8
 
