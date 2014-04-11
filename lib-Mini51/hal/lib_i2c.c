@@ -1,5 +1,5 @@
 /* 
-Copyright 2013 Brad Quick
+Copyright 2014 Victor Joukov, Brad Quick
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,157 +15,39 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "hal.h"
+#include "mini51series.h"
 #include "lib_i2c.h"
-
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
 
 // referenced from app/serial.c
 unsigned int lib_i2c_error_count = 0;
 
-void lib_i2c_init(void){}
-void lib_i2c_setclockspeed(unsigned char speed){}
-unsigned char lib_i2c_start(unsigned char address){ return 0; }
-char lib_i2c_start_wait(unsigned char address){ return 0; }
-unsigned char lib_i2c_rep_start(unsigned char address){ return 0; }
-void lib_i2c_stop(void){}
-unsigned char lib_i2c_write( unsigned char data ){ return 0; }
-unsigned char lib_i2c_readack(void){ return 0; }
-unsigned char lib_i2c_readnak(void){ return 0; }
-void lib_i2c_writereg(unsigned char address,unsigned char reg, unsigned char value){}
-unsigned char lib_i2c_readreg(unsigned char address,unsigned char reg){ return 0; }
-void lib_i2c_readdata(unsigned char address,unsigned char reg,unsigned char *data,unsigned char length){}
-
-#else
-
-#define SCL_H         GPIOB->BSRR = Pin_10 /* GPIO_SetBits(GPIOB , GPIO_Pin_10)   */
-#define SCL_L         GPIOB->BRR  = Pin_10 /* GPIO_ResetBits(GPIOB , GPIO_Pin_10) */
-
-#define SDA_H         GPIOB->BSRR = Pin_11 /* GPIO_SetBits(GPIOB , GPIO_Pin_11)   */
-#define SDA_L         GPIOB->BRR  = Pin_11 /* GPIO_ResetBits(GPIOB , GPIO_Pin_11) */
-
-#define SCL_read      (GPIOB->IDR & Pin_10) /* GPIO_ReadInputDataBit(GPIOB , GPIO_Pin_10) */
-#define SDA_read      (GPIOB->IDR & Pin_11) /* GPIO_ReadInputDataBit(GPIOB , GPIO_Pin_11) */
-
-static void I2C_delay(void)
-{
-    volatile int i = 7;
-    while (i)
-        i--;
-}
-
-static uint8_t lib_i2c_receivebyte(void)
-{
-    uint8_t i = 8;
-    uint8_t byte = 0;
-
-    SDA_H;
-    while (i--) {
-        byte <<= 1;
-        SCL_L;
-        I2C_delay();
-        SCL_H;
-        I2C_delay();
-        if (SDA_read) {
-            byte |= 0x01;
-        }
-    }
-    SCL_L;
-    return byte;
-}
-
-unsigned int lib_i2c_error_count = 0;
-
-unsigned char lib_i2c_waitack(void)
-{
-    SCL_L;
-    I2C_delay();
-    SDA_H;
-    I2C_delay();
-    SCL_H;
-    I2C_delay();
-    if (SDA_read) {
-        SCL_L;
-        return 1;
-    }
-    SCL_L;
-
-    return 0;
-}
-
-/*************************************************************************
-Initialization of the I2C bus interface. Need to be called only once
-*************************************************************************/
 void lib_i2c_init(void)
 {
-    gpio_config_t gpio;
+    CLK_EnableModuleClock(I2C_MODULE);
 
-    gpio.pin = Pin_10 | Pin_11;
-    gpio.speed = Speed_2MHz;
-    gpio.mode = Mode_Out_OD;
-    gpioInit(GPIOB, &gpio);
+    // Set P3.4 and P3.5 for I2C SDA and SCL
+    SYS->P3_MFP = SYS_MFP_P34_SDA | SYS_MFP_P35_SCL;
+
+    /* Reset I2C */
+    SYS->IPRSTC2 |=  SYS_IPRSTC2_I2C_RST_Msk;
+    SYS->IPRSTC2 &= ~SYS_IPRSTC2_I2C_RST_Msk;
+
+    /* Enable I2C Controller */
+    I2C->I2CON |= I2C_I2CON_ENSI_Msk;
+
+    // I2C clock divider, I2C Bus Clock = PCLK/4/(divider + 1)
+    // PCLK 22.1184MHz, PCLK/4 = 5.5696MHz
+    //I2C->I2CLK = 14-1; // ~395KHz
+    //I2C->I2CLK = 20-1; // ~278KHz
+    I2C->I2CLK = 30-1; // ~184KHz
+    //I2C->I2CLK = 55-1; // ~100KHz
+
+    /* Enable I2C interrupt */
+//    I2C->I2CON |= I2C_I2CON_EI_Msk;
+//    NVIC_EnableIRQ(I2C_IRQn);
 }
 
-void lib_i2c_setclockspeed(unsigned char speed)
-{
-
-}
-
-/*************************************************************************   
- Issues a start condition and sends address and transfer direction.
- return 0 = device accessible, 1= failed to access device
-*************************************************************************/
-unsigned char lib_i2c_start(unsigned char address)
-{
-    // send START condition
-    SDA_H;
-    SCL_H;
-    I2C_delay();
-    if (!SDA_read)
-        return 1;
-    SDA_L;
-    I2C_delay();
-    if (SDA_read)
-        return 1;
-    SDA_L;
-    I2C_delay();
-
-    // transmit address byte + direction
-    if (lib_i2c_write(address))
-        return 2;
-
-    return 0;
-}                               /* lib_i2c_start */
-
-/*************************************************************************
-Issues a repeated start condition and sends address and transfer direction 
-
-Input:   address and transfer direction of I2C device
-
-Return:  0 device accessible
-         1 failed to access device
-*************************************************************************/
-unsigned char lib_i2c_rep_start(unsigned char address)
-{
-    return lib_i2c_start(address);
-
-}
-
-
-/*************************************************************************
-Terminates the data transfer and releases the I2C bus
-*************************************************************************/
-void lib_i2c_stop(void)
-{
-    SCL_L;
-    I2C_delay();
-    SDA_L;
-    I2C_delay();
-    SCL_H;
-    I2C_delay();
-    SDA_H;
-    I2C_delay();
-}
+void lib_i2c_setclockspeed(unsigned char speed){}
 
 
 /*************************************************************************
@@ -177,30 +59,73 @@ void lib_i2c_stop(void)
 *************************************************************************/
 unsigned char lib_i2c_write(unsigned char data)
 {
-    int i = 8;
-    // transmit byte
-    while (i--) {
-        SCL_L;
-        I2C_delay();
-        if (data & 0x80)
-            SDA_H;
-        else
-            SDA_L;
-        data <<= 1;
-        I2C_delay();
-        SCL_H;
-        I2C_delay();
-    }
-    SCL_L;
-
-    if (lib_i2c_waitack()) {
-        lib_i2c_stop();
+    I2C_SET_DATA(I2C, data);
+    I2C_SET_CONTROL_REG(I2C, I2C_SI);
+    I2C_WAIT_READY(I2C);
+    // Check ACK
+    uint8_t status = I2C_GET_STATUS(I2C);
+    // Master TX/RX Address/Data ACKs
+    if (status != 0x18 || status != 0x28 || status != 0x40 || status != 0x50)
         return 1;
-    }
 
     return 0;
 }
 
+/*************************************************************************   
+ Issues a start condition and sends address and transfer direction.
+ return 0 = device accessible, 1= failed to access device
+*************************************************************************/
+unsigned char lib_i2c_start(unsigned char address)
+{
+    // Send start
+    I2C_START(I2C);
+    I2C_WAIT_READY(I2C);
+
+    // transmit address byte + direction
+    if (lib_i2c_write(address)) // Master Transmit Address ACK
+        return 2;
+
+    return 0;
+} /* lib_i2c_start */
+
+/*************************************************************************
+Issues a repeated start condition and sends address and transfer direction 
+
+Input:   address and transfer direction of I2C device
+
+Return:  0 device accessible
+         1 failed to access device
+*************************************************************************/
+unsigned char lib_i2c_rep_start(unsigned char address)
+{
+    /* Send data */
+    I2C_SET_CONTROL_REG(I2C, I2C_STA | I2C_SI);
+    I2C_WAIT_READY(I2C);
+    if(I2C_GET_STATUS(I2C) != 0x10) // Master repeat start
+        return 3;
+    // transmit address byte + direction
+    if (lib_i2c_write(address))
+        return 2;
+    return 0;
+}
+
+/*************************************************************************
+Terminates the data transfer and releases the I2C bus
+*************************************************************************/
+void lib_i2c_stop(void)
+{
+    // ? use I2C_STOP
+    I2C_SET_CONTROL_REG(I2C, I2C_STO | I2C_SI);
+}
+
+
+void lib_i2c_writereg(unsigned char address, unsigned char reg, unsigned char value)
+{
+    lib_i2c_start((address << 1) + I2C_WRITE);
+    lib_i2c_write(reg); // Master Transmit Data ACK
+    lib_i2c_write(value);
+    lib_i2c_stop();
+}
 
 /*************************************************************************
 Read one byte from the I2C device, request more data from device 
@@ -209,18 +134,9 @@ Return:  byte read from I2C device
 *************************************************************************/
 unsigned char lib_i2c_readack(void)
 {
-    uint8_t ch;
-    ch = lib_i2c_receivebyte();
-    SCL_L;
-    I2C_delay();
-    SDA_L;
-    I2C_delay();
-    SCL_H;
-    I2C_delay();
-    SCL_L;
-    I2C_delay();
-
-    return ch;
+    I2C_SET_CONTROL_REG(I2C, I2C_AA | I2C_SI);
+    I2C_WAIT_READY(I2C);
+    return I2C_GET_DATA(I2C);
 }
 
 
@@ -231,27 +147,9 @@ Return:  byte read from I2C device
 *************************************************************************/
 unsigned char lib_i2c_readnak(void)
 {
-    uint8_t ch;
-    ch = lib_i2c_receivebyte();
-
-    SCL_L;
-    I2C_delay();
-    SDA_H;
-    I2C_delay();
-    SCL_H;
-    I2C_delay();
-    SCL_L;
-    I2C_delay();
-
-    return ch;
-}
-
-void lib_i2c_writereg(unsigned char address, unsigned char reg, unsigned char value)
-{
-    lib_i2c_start((address << 1) + I2C_WRITE);
-    lib_i2c_write(reg);
-    lib_i2c_write(value);
-    lib_i2c_stop();
+    I2C_SET_CONTROL_REG(I2C, I2C_SI);
+    I2C_WAIT_READY(I2C);
+    return I2C_GET_DATA(I2C);
 }
 
 unsigned char lib_i2c_readreg(unsigned char address, unsigned char reg)
@@ -280,4 +178,3 @@ void lib_i2c_readdata(unsigned char address, unsigned char reg, unsigned char *d
 
     lib_i2c_stop();
 }
-#endif

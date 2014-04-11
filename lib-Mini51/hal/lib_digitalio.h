@@ -26,6 +26,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define DIGITALPORTB 0x20
 #define DIGITALPORTC 0x30
 
+#define DIGITALPORT0 0x00
+#define DIGITALPORT1 0x10
+#define DIGITALPORT2 0x20
+#define DIGITALPORT3 0x30
+#define DIGITALPORT4 0x40
+#define DIGITALPORT5 0x50
+
 #define DIGITALHIGH 0
 #define DIGITALLOW 1
 

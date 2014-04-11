@@ -2,6 +2,19 @@
 
 #if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
 
+// Mini51 ports have only 8 pin each
+typedef enum
+{
+    Pin_0 = 0x0001,
+    Pin_1 = 0x0002,
+    Pin_2 = 0x0004,
+    Pin_3 = 0x0008,
+    Pin_4 = 0x0010,
+    Pin_5 = 0x0020,
+    Pin_6 = 0x0040,
+    Pin_7 = 0x0080,
+    Pin_All = 0x00FF
+} GPIO_Pin;
 #else
 
 typedef enum

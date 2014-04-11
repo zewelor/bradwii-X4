@@ -7,18 +7,34 @@
 // returns whether driver is asking to calibrate throttle or not
 bool pwmInit(drv_pwm_config_t *init)
 {
+    CLK_EnableModuleClock(PWM23_MODULE);
+    CLK_EnableModuleClock(PWM45_MODULE);
+
+    // PWM clock source
+    CLK->CLKSEL1 &= ~CLK_CLKSEL1_PWM23_S_Msk;
+    CLK->CLKSEL1 |= CLK_CLKSEL1_PWM23_S_HCLK;
+    CLK->CLKSEL2 &= ~CLK_CLKSEL2_PWM45_S_Msk;
+    CLK->CLKSEL2 |= CLK_CLKSEL2_PWM45_S_HCLK;
+    
+    // Set up PWM2-5
+    SYS->P2_MFP &= ~(SYS_MFP_P24_Msk | SYS_MFP_P25_Msk | SYS_MFP_P26_Msk);
+    SYS->P2_MFP |= SYS_MFP_P24_PWM2 | SYS_MFP_P25_PWM3 | SYS_MFP_P26_PWM4;
+    SYS->P0_MFP &= ~SYS_MFP_P04_Msk;
+    SYS->P0_MFP |= SYS_MFP_P04_PWM5;
+
     return false;
 }
 void pwmWriteMotor(uint8_t index, uint16_t value)
 {
 }
-void pwmWriteServo(uint8_t index, uint16_t value)
-{
-}
-uint16_t pwmRead(uint8_t channel)
-{
-    return 0;
-}
+// Not implmented
+//void pwmWriteServo(uint8_t index, uint16_t value)
+//{
+//}
+//uint16_t pwmRead(uint8_t channel)
+//{
+//    return 0;
+//}
 #else
 /* FreeFlight/Naze32 timer layout
     TIM2_CH1    RC1             PWM1

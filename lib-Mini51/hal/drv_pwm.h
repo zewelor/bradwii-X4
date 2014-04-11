@@ -8,7 +8,6 @@
 #define MAX_INPUTS  8
 
 typedef struct drv_pwm_config_t {
-    bool enableInput;
     bool usePPM;
     bool useUART;
     bool useServos;

@@ -34,28 +34,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "projectsettings.h"
 #include "drv_serial.h"
 
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
-
-void lib_serial_initport(unsigned char serialportnumber,long baud){}
-void lib_serial_sendchar(unsigned char serialportnumber,unsigned char c){}
-void lib_serial_sendstring(unsigned char serialportnumber,char *string){}
-void lib_serial_senddata(unsigned char serialportnumber,unsigned char *data,int datalength){}
-int lib_serial_numcharsavailable(unsigned char serialportnumber){ return 0; }
-unsigned char lib_serial_getchar(unsigned char serialportnumber){ return 0; }
-void lib_serial_getdata(unsigned char serialportnumber,unsigned char *data,int datalength){}
-int lib_serial_availableoutputbuffersize(unsigned char serialportnumber){ return 0; }
-
-void lib_serial_setrxcallback(unsigned char serialportnumber,serialcallbackfunctptr callback){}
-
-#else
-
 static serialPort_t *lib_serial_getport(unsigned char serialportnumber)
 {
     switch (serialportnumber) {
-        case 1:
+        case 0:
             return &serialPort1;
-        case 2:
-            return &serialPort2;
+//        case 2:
+//            return &serialPort2;
         default:
             return NULL;
     }
@@ -64,26 +49,29 @@ static serialPort_t *lib_serial_getport(unsigned char serialportnumber)
 int lib_serial_availableoutputbuffersize(unsigned char serialportnumber)
 {
     // returns how many more bytes can fit in the outputbuffer
-    return 128; // TODO who cares
+    return 256; // TODO who cares
 }
 
-void lib_serial_setrxcallback(unsigned char serialportnumber, serialcallbackfunctptr callback)
-{
-    serialPort_t *port = lib_serial_getport(serialportnumber);
-
-    port->callback = callback;
-}
+// TODO: not implemented
+// used only in rx.c for decoding of some receivers
+//void lib_serial_setrxcallback(unsigned char serialportnumber, serialcallbackfunctptr callback)
+//{
+//    serialPort_t *port = lib_serial_getport(serialportnumber);
+//    port->callback = callback;
+//}
 
 void lib_serial_initport(unsigned char serialportnumber, long baud)
 { 
     // initialize the serial port and set up a read buffer and interrupts so that we don't lose any data from reading too slowly
     switch (serialportnumber) {
-        case 1:
-            serialOpen(USART1, NULL, baud, MODE_RXTX);
+        // SERIALPORT0
+        case 0:
+            serialOpen(UART, NULL, baud, MODE_RXTX);
             break;
-        case 2:
-            serialOpen(USART2, NULL, baud, MODE_RX);
-            break;
+        // SERIALPORT1 - no such thing on Mini51
+//        case 2:
+//            serialOpen(USART2, NULL, baud, MODE_RX);
+//            break;
     }
 }
 
@@ -128,4 +116,3 @@ void lib_serial_getdata(unsigned char serialportnumber, unsigned char *data, int
     for (x = 0; x < numchars; ++x)
         *data++ = lib_serial_getchar(serialportnumber);
 }
-#endif

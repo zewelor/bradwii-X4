@@ -22,6 +22,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // This file takes the settings from config.h and creates all of the definitions needed for the rest of the code.
 
 // set control board dependant defines here
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
+
+#define GYRO_TYPE MPU6050       // gyro
+#define GYRO_ORIENTATION(VALUES,X, Y, Z) {VALUES[ROLLINDEX] =  Y; VALUES[PITCHINDEX] = -X; VALUES[YAWINDEX] = -Z;}
+#define ACCELEROMETER_TYPE MPU6050      // accelerometer
+#define ACC_ORIENTATION(VALUES,X, Y, Z)  {VALUES[ROLLINDEX]  = -X; VALUES[PITCHINDEX]  = -Y; VALUES[YAWINDEX]  =  Z;}
+#ifndef COMPASS_TYPE
+#define COMPASS_TYPE NO_COMPASS
+#endif
+#ifndef BAROMETER_TYPE
+#define BAROMETER_TYPE NO_BAROMETER
+#endif
+#ifndef MULTIWII_CONFIG_SERIAL_PORTS
+#define MULTIWII_CONFIG_SERIAL_PORTS SERIALPORT0
+#endif
+#ifndef GPS_TYPE
+#define GPS_TYPE NO_GPS
+#endif
+
+#define RXNUMCHANNELS 4
+
+// LED Outputs
+#define LED1_OUTPUT (DIGITALPORT0 | 0)
+#ifndef LED1_ON
+#define LED1_ON DIGITALOFF
+#endif
+
+#else
+
 #define GYRO_TYPE MPU6050       // gyro
 #define GYRO_ORIENTATION(VALUES,X, Y, Z) {VALUES[ROLLINDEX] =  Y; VALUES[PITCHINDEX] = -X; VALUES[YAWINDEX] = -Z;}
 #define ACCELEROMETER_TYPE MPU6050      // accelerometer
@@ -52,6 +81,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LED2_OUTPUT (DIGITALPORTB | 4)
 #ifndef LED2_ON
 #define LED2_ON DIGITALON
+#endif
+
 #endif
 
 // default to QUADX if no configuration was chosen

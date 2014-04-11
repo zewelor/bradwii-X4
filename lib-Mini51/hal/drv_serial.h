@@ -1,8 +1,5 @@
 #pragma once
-
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
-
-#else
+#include <stdint.h>
 
 #define UART_BUFFER_SIZE    64
 
@@ -28,28 +25,23 @@ typedef struct {
     uint32_t txBufferSize;
     volatile uint8_t *rxBuffer;
     volatile uint8_t *txBuffer;
-    uint32_t rxDMAPos;
-    bool txDMAEmpty;
     uint32_t rxBufferHead;
     uint32_t rxBufferTail;
     uint32_t txBufferHead;
     uint32_t txBufferTail;
 
-    DMA_Channel_TypeDef *rxDMAChannel;
-    DMA_Channel_TypeDef *txDMAChannel;
-    uint32_t rxDMAIrq;
-    uint32_t txDMAIrq;
-    USART_TypeDef *USARTx;
+    UART_T *UARTx;
 
     serialReceiveCallbackPtr callback;
 } serialPort_t;
 
 extern serialPort_t serialPort1;
-extern serialPort_t serialPort2;
-extern serialPort_t serialPort3;
+//extern serialPort_t serialPort2;
+//extern serialPort_t serialPort3;
 
-serialPort_t *serialOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode);
+serialPort_t *serialOpen(UART_T *UARTx, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode);
+// Available chars in RX queue
 uint8_t uartAvailable(serialPort_t *s);
 uint8_t uartRead(serialPort_t *s);
 void uartWrite(serialPort_t *s, uint8_t ch);
-#endif
+void uartInit(void);

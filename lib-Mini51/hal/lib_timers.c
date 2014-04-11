@@ -35,16 +35,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // inittimers();
 //    lib_timers_delaymilliseconds(500) {}
 
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
-
-void lib_timers_init(void){}
-unsigned long lib_timers_starttimer(void){ return 0; }
-unsigned long lib_timers_gettimermicroseconds(unsigned long starttime){ return 0; }
-unsigned long lib_timers_gettimermicrosecondsandreset(unsigned long *starttime){ return 0; }
-void    lib_timers_delaymilliseconds(unsigned long delaymilliseconds){}
-
-#else
-
 // cycles per microsecond
 static volatile uint32_t usTicks = 0;
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
@@ -56,14 +46,9 @@ void SysTick_Handler(void)
     sysTickUptime++;
 }
 
+// needs to be called once in the program before timers can be used
 void lib_timers_init(void)
 {                               
-    // needs to be called once in the program before timers can be used
-
-    RCC_ClocksTypeDef clocks;
-    RCC_GetClocksFreq(&clocks);
-    usTicks = clocks.SYSCLK_Frequency / 1000000;
-
     // SysTick
     SysTick_Config(SystemCoreClock / 1000);
 }
@@ -76,7 +61,7 @@ uint32_t lib_timers_getcurrentmicroseconds(void)
         ms = sysTickUptime;
         cycle_cnt = SysTick->VAL;
     } while (ms != sysTickUptime);
-    return (ms * 1000) + (usTicks * 1000 - cycle_cnt) / usTicks;
+    return (ms * 1000) + (CyclesPerUs * 1000 - cycle_cnt) / CyclesPerUs;
 }
 
 
@@ -93,7 +78,7 @@ unsigned long lib_timers_gettimermicroseconds(unsigned long starttime)
 }
 
 unsigned long lib_timers_gettimermicrosecondsandreset(unsigned long *starttime)
-{                               \
+{
     // returns microseconds since this timer was started and then reset the start time
     // this allows us to keep checking the time without losing any time
     unsigned long currenttime = lib_timers_getcurrentmicroseconds();
@@ -120,4 +105,3 @@ void lib_timers_delaymilliseconds(unsigned long delaymilliseconds)
     while (lib_timers_gettimermicroseconds(timercounts) < delaymilliseconds * 1000L) {
     }
 }
-#endif

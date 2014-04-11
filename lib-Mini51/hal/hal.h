@@ -10,12 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
 #include "Mini51Series.h"
-#else
-#include "stm32f10x_conf.h"
-#include "core_cm3.h"
-#endif
 // These includes are totally not needed here, they only bring
 // dependency on actual processor details into main source
 //#include "drv_gpio.h"

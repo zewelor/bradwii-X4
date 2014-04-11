@@ -42,13 +42,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 void lib_digitalio_initpin(unsigned char portandpinnumber, unsigned char output)
 {
+    uint8_t port = (portandpinnumber & 0xF0) >> 4;
+    uint8_t pin = portandpinnumber & 0x0F;
+    // Call drv_gpio here
+    uint32_t mode = output == DIGITALINPUT ? GPIO_PMD_INPUT : GPIO_PMD_OUTPUT;
+    GPIO_SetMode(((GPIO_T *) (P0_BASE + 0x40*port)), (1 << pin), mode);
 }
+
 unsigned char lib_digitalio_getinput(unsigned char portandpinnumber)
 {
     return 0;
 }
-void lib_digitalio_setoutput(unsigned char pinnumber, unsigned char value)
+void lib_digitalio_setoutput(unsigned char portandpinnumber, unsigned char value)
 {
+    uint8_t port = (portandpinnumber & 0xF0) >> 4;
+    uint8_t pin = portandpinnumber & 0x0F;
+    GPIO_PIN_ADDR(port, pin) = value ? 1 : 0;
 }
 void lib_digitalio_setinterruptcallback(unsigned char pinnumber, digitalcallbackfunctptr callback)
 {
