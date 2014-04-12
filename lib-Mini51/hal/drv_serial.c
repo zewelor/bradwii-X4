@@ -98,8 +98,11 @@ void uartWrite(serialPort_t *s, uint8_t ch)
 #if defined(USE_PERIPH_BUFFERS)
     UART_WRITE(s->UARTx, ch);
 #else
+    // Wait here if buffer is full
+    uint32_t nextHead = (s->txBufferHead + 1) % s->txBufferSize;
+    while (nextHead == s->txBufferTail) ;
     s->txBuffer[s->txBufferHead] = ch;
-    s->txBufferHead = (s->txBufferHead + 1) % s->txBufferSize;
+    s->txBufferHead = nextHead;
 
     // Enable transmit by enabling TX empty interrupt
     UART_EnableInt(s->UARTx, UART_IER_THRE_IEN_Msk);

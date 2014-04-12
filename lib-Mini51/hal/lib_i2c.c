@@ -65,7 +65,7 @@ unsigned char lib_i2c_write(unsigned char data)
     // Check ACK
     uint8_t status = I2C_GET_STATUS(I2C);
     // Master TX/RX Address/Data ACKs
-    if (status != 0x18 || status != 0x28 || status != 0x40 || status != 0x50)
+    if (status != 0x18 && status != 0x28 && status != 0x40 && status != 0x50)
         return 1;
 
     return 0;

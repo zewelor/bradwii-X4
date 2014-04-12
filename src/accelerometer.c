@@ -101,6 +101,9 @@ void readacc(void)
 
     // convert readings to fixedpointnum (in g's)
     //usefull info is on the 14 bits  [2-15] bits  /4 => [0-13] bits  /4 => 12 bit resolution
-    ACC_ORIENTATION(global.acc_g_vector, (((data[0] << 8) | data[1]) >> 2) * 64L, (((data[2] << 8) | data[3]) >> 2) * 64L, (((data[4] << 8) | data[5]) >> 2) * 64L);
+    ACC_ORIENTATION(global.acc_g_vector,
+        (((int16_t) ((data[0] << 8) | data[1])) >> 2) * 64L,
+        (((int16_t) ((data[2] << 8) | data[3])) >> 2) * 64L,
+        (((int16_t) ((data[4] << 8) | data[5])) >> 2) * 64L);
 }
 #endif

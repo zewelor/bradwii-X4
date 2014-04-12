@@ -98,7 +98,9 @@ void readgyro(void)
     // convert to fixedpointnum, in degrees per second
     // the gyro puts out an int where each count equals 0.0609756097561 degrees/second
     // we want fixedpointnums, so we multiply by 3996 (0.0609756097561 * (1<<FIXEDPOINTSHIFT))
-    GYRO_ORIENTATION(global.gyrorate, ((data[0] << 8) | data[1]) * 3996L,       // range: +/- 8192; +/- 2000 deg/sec
-                      ((data[2] << 8) | data[3]) * 3996L, ((data[4] << 8) | data[5]) * 3996L);
+    GYRO_ORIENTATION(global.gyrorate,
+        ((int16_t) ((data[0] << 8) | data[1])) * 3996L,       // range: +/- 8192; +/- 2000 deg/sec
+        ((int16_t) ((data[2] << 8) | data[3])) * 3996L,
+        ((int16_t) ((data[4] << 8) | data[5])) * 3996L);
 }
 #endif
