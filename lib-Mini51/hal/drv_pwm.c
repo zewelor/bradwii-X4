@@ -16,17 +16,55 @@ bool pwmInit(drv_pwm_config_t *init)
     CLK->CLKSEL2 &= ~CLK_CLKSEL2_PWM45_S_Msk;
     CLK->CLKSEL2 |= CLK_CLKSEL2_PWM45_S_HCLK;
     
-    // Set up PWM2-5
+    // Multifuncional pin set up PWM2-5
     SYS->P2_MFP &= ~(SYS_MFP_P24_Msk | SYS_MFP_P25_Msk | SYS_MFP_P26_Msk);
     SYS->P2_MFP |= SYS_MFP_P24_PWM2 | SYS_MFP_P25_PWM3 | SYS_MFP_P26_PWM4;
     SYS->P0_MFP &= ~SYS_MFP_P04_Msk;
     SYS->P0_MFP |= SYS_MFP_P04_PWM5;
+    
+    //
+#define MWII_PWM_MAX  16000
+#define MWII_PWM_PRE    10
+#define MWII_PWM_MASK ((1 << 2) | (1 << 3) | (1 << 4) | (1 << 5))
+
+//    SYS_ResetModule(PWM_RST);
+
+    // Even channel N and N+1 share prescaler
+    PWM_SET_PRESCALER(PWM, 2, MWII_PWM_PRE);
+    PWM_SET_PRESCALER(PWM, 4, MWII_PWM_PRE);
+    PWM_SET_DIVIDER(PWM, 2, PWM_CLK_DIV_1);
+    PWM_SET_DIVIDER(PWM, 3, PWM_CLK_DIV_1);
+    PWM_SET_DIVIDER(PWM, 4, PWM_CLK_DIV_1);
+    PWM_SET_DIVIDER(PWM, 5, PWM_CLK_DIV_1);
+
+    PWM_Start(PWM, MWII_PWM_MASK);
+    // No analog of PWM_Start for enabling auto-reload mode
+    for (int i = 2; i <= 5; ++i) {
+        PWM->PCR |= PWM_PCR_CH0MOD_Msk << (4 * i);
+    }
+//    PWM->PCR = PWM_PCR_CH3EN_Msk | PWM_PCR_CH3MOD_Msk;
+    
+  
+    // Duty
+    PWM_SET_CMR(PWM, 2, 0);
+    PWM_SET_CMR(PWM, 3, 0);
+    PWM_SET_CMR(PWM, 4, 0);
+    PWM_SET_CMR(PWM, 5, 0);
+    // Period, actually sets it to safe value 1000+1 
+    PWM_SET_CNR(PWM, 2, MWII_PWM_MAX);
+    PWM_SET_CNR(PWM, 3, MWII_PWM_MAX);
+    PWM_SET_CNR(PWM, 4, MWII_PWM_MAX);
+    PWM_SET_CNR(PWM, 5, MWII_PWM_MAX);
+    
+    PWM_EnableOutput(PWM, MWII_PWM_MASK);
 
     return false;
 }
 void pwmWriteMotor(uint8_t index, uint16_t value)
 {
+    PWM_SET_CMR(PWM, index+2, (value-1000)*16);
 }
+
 // Not implmented
 //void pwmWriteServo(uint8_t index, uint16_t value)
 //{

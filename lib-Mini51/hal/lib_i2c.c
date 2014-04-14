@@ -21,6 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // referenced from app/serial.c
 unsigned int lib_i2c_error_count = 0;
 
+static inline int I2C_WAIT_READY_ERROR(I2C_T *i2c)
+{
+    int attempts = 1000;
+    while(!(i2c->I2CON & I2C_I2CON_SI_Msk) && attempts--);
+    if (!attempts) lib_i2c_error_count++;
+    return attempts;
+}
+
+
 void lib_i2c_init(void)
 {
     CLK_EnableModuleClock(I2C_MODULE);
@@ -39,7 +48,8 @@ void lib_i2c_init(void)
     // PCLK 22.1184MHz, PCLK/4 = 5.5696MHz
     //I2C->I2CLK = 14-1; // ~395KHz
     //I2C->I2CLK = 20-1; // ~278KHz
-    I2C->I2CLK = 30-1; // ~184KHz
+    //I2C->I2CLK = 30-1; // ~184KHz
+    I2C->I2CLK = 37-1; // ~151KHz
     //I2C->I2CLK = 55-1; // ~100KHz
 
     /* Enable I2C interrupt */
@@ -61,7 +71,8 @@ unsigned char lib_i2c_write(unsigned char data)
 {
     I2C_SET_DATA(I2C, data);
     I2C_SET_CONTROL_REG(I2C, I2C_SI);
-    I2C_WAIT_READY(I2C);
+    if (!I2C_WAIT_READY_ERROR(I2C))
+        return 2;
     // Check ACK
     uint8_t status = I2C_GET_STATUS(I2C);
     // Master TX/RX Address/Data ACKs
@@ -79,7 +90,8 @@ unsigned char lib_i2c_start(unsigned char address)
 {
     // Send start
     I2C_START(I2C);
-    I2C_WAIT_READY(I2C);
+    if (!I2C_WAIT_READY_ERROR(I2C))
+        return 3;
 
     // transmit address byte + direction
     if (lib_i2c_write(address)) // Master Transmit Address ACK
@@ -100,7 +112,8 @@ unsigned char lib_i2c_rep_start(unsigned char address)
 {
     /* Send data */
     I2C_SET_CONTROL_REG(I2C, I2C_STA | I2C_SI);
-    I2C_WAIT_READY(I2C);
+    if (!I2C_WAIT_READY_ERROR(I2C))
+        return 4;
     if(I2C_GET_STATUS(I2C) != 0x10) // Master repeat start
         return 3;
     // transmit address byte + direction
@@ -135,7 +148,7 @@ Return:  byte read from I2C device
 unsigned char lib_i2c_readack(void)
 {
     I2C_SET_CONTROL_REG(I2C, I2C_AA | I2C_SI);
-    I2C_WAIT_READY(I2C);
+    I2C_WAIT_READY_ERROR(I2C);
     return I2C_GET_DATA(I2C);
 }
 
@@ -148,7 +161,7 @@ Return:  byte read from I2C device
 unsigned char lib_i2c_readnak(void)
 {
     I2C_SET_CONTROL_REG(I2C, I2C_SI);
-    I2C_WAIT_READY(I2C);
+    I2C_WAIT_READY_ERROR(I2C);
     return I2C_GET_DATA(I2C);
 }
 

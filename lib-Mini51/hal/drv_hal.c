@@ -99,15 +99,15 @@ void lib_hal_init(void)
 #define ALIGN_MASK (ALIGN_SIZE - 1)
 
 
-void eeprom_write_block(const void *src, uint16_t index, size_t size)
+size_t eeprom_write_block(const void *src, uint16_t index, size_t size)
 {
-    if (!flash_available) return;
-    if (index <= last_write_index) {
-        FMC_Erase(FLASH_WRITE_ADDR);
-    }
+    if (!flash_available) return 0;
     SYS_UnlockReg();
     FMC_Open();
 
+    if (index < last_write_index) {
+        FMC_Erase(FLASH_WRITE_ADDR);
+    }
     uint8_t *read_src = (uint8_t *) src;
     uint32_t addr = (FLASH_WRITE_ADDR + index) & ~ALIGN_MASK;
     int i = index & ALIGN_MASK;
@@ -119,8 +119,8 @@ void eeprom_write_block(const void *src, uint16_t index, size_t size)
     for (; addr < endAddr; addr += ALIGN_SIZE)
     {
         int l = FLASH_WRITE_ADDR + index + size - addr;
+        if (l > ALIGN_SIZE) l = ALIGN_SIZE;
         if (l != ALIGN_SIZE) {
-            l = ALIGN_SIZE;
             data = FMC_Read(addr);
         }
         for (; i < l;) {
@@ -133,31 +133,17 @@ void eeprom_write_block(const void *src, uint16_t index, size_t size)
     FMC_Close();
     SYS_LockReg();
     last_write_index = index + size;
+    
+    return size;
 }
 
 void eeprom_commit(void)
 {
-    /*
-    if (!flash_available) return;
-    SYS_UnlockReg();
-    FMC_Open();
-    FMC_Erase(FLASH_WRITE_ADDR);
-
-    uint32_t u32Addr, u32EndAddr;
-    u32EndAddr = FLASH_WRITE_ADDR + EEP_SIZE;
-    for (u32Addr = FLASH_WRITE_ADDR; u32Addr < u32EndAddr; u32Addr += 4) 
-    {
-        FMC_Write(u32Addr, *((uint32_t*)(eep+u32Addr)));
-    }
-
-    FMC_Close();
-    SYS_LockReg();
-    */
 }
 
-void eeprom_read_block(void *dst, uint16_t index, size_t size)
+size_t eeprom_read_block(void *dst, uint16_t index, size_t size)
 {
-    if (!flash_available) return;
+    if (!flash_available) return 0;
     SYS_UnlockReg();
     FMC_Open();
 
@@ -178,10 +164,13 @@ void eeprom_read_block(void *dst, uint16_t index, size_t size)
 
     FMC_Close();
     SYS_LockReg();
+    
+    return size;
 }
 
 
-static int  set_data_flash_base(uint32_t u32DFBA)
+// Copied from Nuvoton's sample code
+static int set_data_flash_base(uint32_t u32DFBA)
 {
     uint32_t   au32Config[2];
     

@@ -27,8 +27,8 @@ typedef struct {
     volatile uint8_t *txBuffer;
     uint32_t rxBufferHead;
     uint32_t rxBufferTail;
-    uint32_t txBufferHead;
-    uint32_t txBufferTail;
+    volatile uint32_t txBufferHead;
+    volatile uint32_t txBufferTail;
 
     UART_T *UARTx;
 
