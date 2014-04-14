@@ -172,6 +172,7 @@ void readrx(void)
         }
         return;
     }
+    NRF24L01_WriteReg(NRF24L01_07_STATUS, BV(NRF24L01_07_RX_DR));
     NRF24L01_ReadPayload(packet, V2x2_PAYLOAD_SIZE);
     NRF24L01_FlushRx();
     switch_channel();
