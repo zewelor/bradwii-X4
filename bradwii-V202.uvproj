@@ -343,7 +343,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>1</Optim>
+            <Optim>3</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>0</OneElfS>
@@ -470,11 +470,6 @@
               <FilePath>.\src\pilotcontrol.c</FilePath>
             </File>
             <File>
-              <FileName>rx.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\src\rx.c</FilePath>
-            </File>
-            <File>
               <FileName>serial.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\serial.c</FilePath>
@@ -483,6 +478,16 @@
               <FileName>vectors.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\vectors.c</FilePath>
+            </File>
+            <File>
+              <FileName>rx_v202.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\rx_v202.c</FilePath>
+            </File>
+            <File>
+              <FileName>nrf24l01.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\nrf24l01.c</FilePath>
             </File>
           </Files>
         </Group>

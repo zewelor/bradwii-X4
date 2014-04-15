@@ -1,5 +1,5 @@
 /*
-    This file is copied with heavy modifications from project Deviation,
+    This file is copied with modifications from project Deviation,
     see http://deviationtx.com
 
     This project is free software: you can redistribute it and/or modify

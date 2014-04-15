@@ -1,4 +1,4 @@
-// This file is copied with heavy modifications from project Deviation,
+// This file is copied with modifications from project Deviation,
 // see http://deviationtx.com, file iface_nrf24l01.h
 
 #ifndef _IFACE_NRF24L01_H_
