@@ -31,14 +31,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // initrx()   // initializes the r/c receiver
 // readrx()   // loads global.rxvalues with r/c values as fixedpointnum's from -1 to 1 (0 is the center).
 
-unsigned char channelindex[] = { ROLLINDEX,PITCHINDEX,THROTTLEINDEX,YAWINDEX,AUX1INDEX,AUX2INDEX,AUX3INDEX,AUX4INDEX,8,9,10,11 };
+unsigned char v2x2_channelindex[] = { THROTTLEINDEX,YAWINDEX,PITCHINDEX,ROLLINDEX,AUX1INDEX,AUX2INDEX,AUX3INDEX,AUX4INDEX,8,9,10,11 };
 
 extern globalstruct global;
+extern usersettingsstruct usersettings;        // user editable variables
+
 
 #define BV(x) (1 << (x))
 
-#define V2x2_PAYLOAD_SIZE 16
-#define V2x2_NFREQCHANNELS 16
+///////////////////////////////////////////////////////////////////////
+// V2X2 protocol
+
+#define V2X2_PAYLOAD_SIZE 16
+#define V2X2_NFREQCHANNELS 16
+
+enum {
+    V2X2_FLAG_CAMERA = 0x01, // also automatic Missile Launcher and Hoist in one direction
+    V2X2_FLAG_VIDEO  = 0x02, // also Sprayer, Bubbler, Missile Launcher(1), and Hoist in the other dir.
+    V2X2_FLAG_FLIP   = 0x04,
+    V2X2_FLAG_UNK9   = 0x08,
+    V2X2_FLAG_LED    = 0x10,
+    V2X2_FLAG_UNK10  = 0x20,
+    V2X2_FLAG_BIND   = 0xC0
+};
 
 // This is frequency hopping table for V202 protocol
 // The table is the first 4 rows of 32 frequency hopping
@@ -48,7 +63,7 @@ extern globalstruct global;
 // number in this case.
 // The pattern is defined by 5 least significant bits of
 // sum of 3 bytes comprising TX id
-static const uint8_t freq_hopping[][V2x2_NFREQCHANNELS] = {
+static const uint8_t v2x2_freq_hopping[][V2X2_NFREQCHANNELS] = {
  { 0x27, 0x1B, 0x39, 0x28, 0x24, 0x22, 0x2E, 0x36,
    0x19, 0x21, 0x29, 0x14, 0x1E, 0x12, 0x2D, 0x18 }, //  00
  { 0x2E, 0x33, 0x25, 0x38, 0x19, 0x12, 0x18, 0x16,
@@ -59,13 +74,47 @@ static const uint8_t freq_hopping[][V2x2_NFREQCHANNELS] = {
    0x18, 0x2A, 0x21, 0x38, 0x10, 0x26, 0x20, 0x1F }  //  03
 };
 
-static uint8_t rf_channels[V2x2_NFREQCHANNELS];
-static uint8_t packet[V2x2_PAYLOAD_SIZE];
-static uint8_t packet_sent;
-static uint8_t tx_id[3];
+static uint8_t rf_channels[MAXFHSIZE];
+static uint8_t packet[V2X2_PAYLOAD_SIZE];
+static uint32_t valid_packet_received;
 static uint8_t rf_ch_num;
-static uint32_t bind_timer;
+static uint8_t nfreqchannels;
+static uint8_t bound;
+static uint32_t packet_timer;
+static uint32_t rx_timeout;
+static uint32_t missed_packets;
+static uint32_t bad_packets;
 
+static void v2x2_set_tx_id(uint8_t *id)
+{
+    uint8_t sum;
+    usersettings.boundprotocol = BOUND_PROTO_V2X2;
+    usersettings.txidsize = 3;
+    usersettings.txid[0] = id[0];
+    usersettings.txid[1] = id[1];
+    usersettings.txid[2] = id[2];
+    sum = id[0] + id[1] + id[2];
+    usersettings.fhsize = V2X2_NFREQCHANNELS;
+    
+    // Base row is defined by lowest 2 bits
+    const uint8_t *fh_row = v2x2_freq_hopping[sum & 0x03];
+    // Higher 3 bits define increment to corresponding row
+    uint8_t increment = (sum & 0x1e) >> 2;
+    for (int i = 0; i < V2X2_NFREQCHANNELS; ++i) {
+        uint8_t val = fh_row[i] + increment;
+        // Strange avoidance of channels divisible by 16
+        usersettings.freqhopping[i] = (val & 0x0f) ? val : val - 3;
+    }
+}
+
+static void set_bound()
+{
+    bound = true;
+    for (int i = 0; i < usersettings.fhsize; ++i) {
+        rf_channels[i] = usersettings.freqhopping[i];
+    }
+    rx_timeout = 1000L; // find the channel as fast as possible
+}
 
 static void initialize_beken(void)
 {
@@ -107,7 +156,7 @@ static void initialize_beken(void)
         printf("nRF24L01 detected\n");
     }
     NRF24L01_Activate(0x53); // switch bank back
-}    
+}
 
 void initrx(void)
 {
@@ -121,11 +170,11 @@ void initrx(void)
     NRF24L01_WriteReg(NRF24L01_02_EN_RXADDR, 0x01);  // Enable data pipe 0
     NRF24L01_WriteReg(NRF24L01_03_SETUP_AW, 0x03);   // 5-byte RX/TX address
     NRF24L01_WriteReg(NRF24L01_04_SETUP_RETR, 0xFF); // 4ms retransmit t/o, 15 tries
-    NRF24L01_WriteReg(NRF24L01_05_RF_CH, 0x08);      // Channel 8 - bind
+//    NRF24L01_WriteReg(NRF24L01_05_RF_CH, 0x08);      // Channel 8 - bind
     NRF24L01_SetBitrate(NRF24L01_BR_1M);                          // 1Mbps
     NRF24L01_SetPower(TXPOWER_100mW);
     NRF24L01_WriteReg(NRF24L01_07_STATUS, 0x70);     // Clear data ready, data sent, and retransmit
-    NRF24L01_WriteReg(NRF24L01_11_RX_PW_P0, V2x2_PAYLOAD_SIZE);  // bytes of data payload for pipe 0
+    NRF24L01_WriteReg(NRF24L01_11_RX_PW_P0, V2X2_PAYLOAD_SIZE);  // bytes of data payload for pipe 0
     NRF24L01_WriteReg(NRF24L01_17_FIFO_STATUS, 0x00); // Just in case, no real bits to write here
     uint8_t rx_tx_addr[] = {0x66, 0x88, 0x68, 0x68, 0x68};
 //    uint8_t rx_p1_addr[] = {0x88, 0x66, 0x86, 0x86, 0x86};
@@ -140,50 +189,104 @@ void initrx(void)
     NRF24L01_FlushTx();
     NRF24L01_FlushRx();
 
-    packet_sent = 0;
+    valid_packet_received = 0;
     rf_ch_num = 0;
 
     // Turn radio power on
     config |= BV(NRF24L01_00_PWR_UP);
     NRF24L01_WriteReg(NRF24L01_00_CONFIG, config);
-    // Implicit delay in callback
     // delayMicroseconds(150);
-    bind_timer = lib_timers_getcurrentmicroseconds();
-    for (int i = 0; i < V2x2_NFREQCHANNELS; ++i) {
-        rf_channels[i] = freq_hopping[0][i];
+    lib_timers_delaymilliseconds(1); // 6 times more than needed
+    
+    valid_packet_received = missed_packets = bad_packets = 0;
+    
+    if (usersettings.boundprotocol == BOUND_PROTO_NONE) {
+        // Prepare to bind
+        packet_timer = lib_timers_starttimer();
+        for (int i = 0; i < V2X2_NFREQCHANNELS; ++i) {
+            rf_channels[i] = v2x2_freq_hopping[0][i];
+        }
+        nfreqchannels = V2X2_NFREQCHANNELS;
+        rx_timeout = 1000L;
+        bound = false;
+    } else {
+        // Prepare to listen to bound protocol, if fails
+        // try to bind
+        set_bound();
     }
 }
 
 static void switch_channel(void)
 {
     NRF24L01_WriteReg(NRF24L01_05_RF_CH, rf_channels[rf_ch_num]);
-    if (++rf_ch_num >= V2x2_NFREQCHANNELS) rf_ch_num = 0;
+    if (++rf_ch_num >= nfreqchannels) rf_ch_num = 0;
+}
+
+static bool decode_packet(uint8_t *packet, uint16_t *data)
+{
+    // Decode packet
+    if ((packet[14] & V2X2_FLAG_BIND) == V2X2_FLAG_BIND) {
+        if (bound) return false;
+        v2x2_set_tx_id(&packet[7]);
+        set_bound();
+        return false;
+    } else {
+        if (!bound) return false;
+        if (packet[7] != usersettings.txid[0] ||
+            packet[8] != usersettings.txid[1] ||
+            packet[9] != usersettings.txid[2])
+        {
+            bad_packets++;
+            return false;
+        }
+        // Restore regular interval
+        rx_timeout = 10000L; // 4ms regular interval + 25%
+        // TREA order in packet to MultiWii order is handled by
+        // correct assignment to channelindex
+        // Throttle 0..255 to 1000..2000
+        data[v2x2_channelindex[0]] = ((uint16_t)packet[0]) * 1000 / 255 + 1000;
+        for (int i = 1; i < 4; ++i) {
+            uint8_t a = packet[i];
+            data[v2x2_channelindex[i]] = ((uint16_t)(a < 0x80 ? 0x7f - a : a)) * 1000 / 255 + 1000;
+        }
+        uint8_t flags[] = {V2X2_FLAG_LED, V2X2_FLAG_FLIP, V2X2_FLAG_CAMERA, V2X2_FLAG_VIDEO}; // two more unknown bits
+        for (int i = 4; i < 8; ++i) {
+            data[v2x2_channelindex[i]] = 1000 + ((packet[14] & flags[i-4]) ? 1000 : 0);
+        }
+        packet_timer = lib_timers_starttimer();
+        valid_packet_received++;
+        return true;
+    }
 }
 
 void readrx(void)
 {
     int chan;
-    uint16_t data;
+    uint16_t data[8];
 
     if (!(NRF24L01_ReadReg(NRF24L01_07_STATUS) & BV(NRF24L01_07_RX_DR))) {
-        uint32_t t = lib_timers_gettimermicroseconds(bind_timer);
-        if (t > 1000L) {
-            switch_channel();
+        uint32_t t = lib_timers_gettimermicroseconds(packet_timer);
+        if (t > rx_timeout) {
+            if (bound) missed_packets++;
+            else switch_channel();
+            packet_timer = lib_timers_starttimer();
         }
         return;
     }
     NRF24L01_WriteReg(NRF24L01_07_STATUS, BV(NRF24L01_07_RX_DR));
-    NRF24L01_ReadPayload(packet, V2x2_PAYLOAD_SIZE);
+    NRF24L01_ReadPayload(packet, V2X2_PAYLOAD_SIZE);
     NRF24L01_FlushRx();
     switch_channel();
+    if (!decode_packet(packet, data))
+        return;
     
     for (chan = 0; chan < 8; ++chan) {
 //        data = pwmRead(chan);
 //    if (data < 750 || data > 2250)
-        data = 1500;
+//        data = 1500;
 
         // convert from 1000-2000 range to -1 to 1 fixedpointnum range and low pass filter to remove glitches
-        lib_fp_lowpassfilter(&global.rxvalues[channelindex[chan]], ((fixedpointnum) data - 1500) * 131L, global.timesliver, FIXEDPOINTONEOVERONESIXTYITH, TIMESLIVEREXTRASHIFT);
+        lib_fp_lowpassfilter(&global.rxvalues[chan], ((fixedpointnum) data[chan] - 1500) * 131L, global.timesliver, FIXEDPOINTONEOVERONESIXTYITH, TIMESLIVEREXTRASHIFT);
     }
     // reset the failsafe timer
     global.failsafetimer = lib_timers_starttimer();

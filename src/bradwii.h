@@ -46,6 +46,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define NAVIGATIONMODEPOSITIONHOLD 1
 #define NAVIGATIONMODERETURNTOHOME 2
 
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
+// Definitions for a group of nRF24L01 based protocols
+#define BOUND_PROTO_NONE  0
+#define BOUND_PROTO_V2X2  1
+#define BOUND_PROTO_HISKY 2
+#define BOUND_PROTO_SLT   3
+
+#define MAXTXIDSIZE 5 // maximum TX id length
+#define MAXFHSIZE 20  // maximum frequency hopping size
+#endif    
+
 
 // put all of the global variables into one structure to make them easy to find
 typedef struct {
@@ -95,6 +106,14 @@ typedef struct {
     fixedpointnum compasscalibrationmultiplier[3];      // Multipliers used to calibrate the compass
     int compasszerooffset[3];   // Offsets used to calibrate the compass
     fixedpointnum maxpitchandrollrate;  // maximum pitch and roll rate (by pilot input) in degrees/sec
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
+    // Embedded RX stores binding info here
+    uint8_t boundprotocol;
+    uint8_t txidsize;
+    uint8_t fhsize;
+    uint8_t txid[MAXTXIDSIZE];
+    uint8_t freqhopping[MAXFHSIZE];
+#endif    
 } usersettingsstruct;
 
 void defaultusersettings(void);
