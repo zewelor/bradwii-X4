@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 extern usersettingsstruct usersettings;
 extern globalstruct global;
 
-#define MAGICNUMBER 12345
+#define MAGICNUMBER 12346
 
 void writeusersettingstoeeprom(void)
 {

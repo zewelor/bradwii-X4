@@ -130,7 +130,6 @@ static void initialize_beken(void)
     printf("Trying to switch banks\n");
     if (NRF24L01_ReadReg(NRF24L01_07_STATUS) & 0x80) {
         printf("BK2421 detected\n");
-        uint32_t nul = 0;
         // Beken registers don't have such nice names, so we just mention
         // them by their numbers
         // It's all magic, eavesdropped from real transfer and not even from the
@@ -138,18 +137,19 @@ static void initialize_beken(void)
         NRF24L01_WriteRegisterMulti(0x00, (uint8_t *) "\x40\x4B\x01\xE2", 4);
         NRF24L01_WriteRegisterMulti(0x01, (uint8_t *) "\xC0\x4B\x00\x00", 4);
         NRF24L01_WriteRegisterMulti(0x02, (uint8_t *) "\xD0\xFC\x8C\x02", 4);
-        NRF24L01_WriteRegisterMulti(0x03, (uint8_t *) "\xF9\x00\x39\x21", 4);
+//        NRF24L01_WriteRegisterMulti(0x03, (uint8_t *) "\xF9\x00\x39\x21", 4);
+        NRF24L01_WriteRegisterMulti(0x03, (uint8_t *) "\x99\x00\x39\x41", 4);
         NRF24L01_WriteRegisterMulti(0x04, (uint8_t *) "\xC1\x96\x9A\x1B", 4);
-        NRF24L01_WriteRegisterMulti(0x05, (uint8_t *) "\x24\x06\x7F\xA6", 4);
-        NRF24L01_WriteRegisterMulti(0x06, (uint8_t *) &nul, 4);
-        NRF24L01_WriteRegisterMulti(0x07, (uint8_t *) &nul, 4);
-        NRF24L01_WriteRegisterMulti(0x08, (uint8_t *) &nul, 4);
-        NRF24L01_WriteRegisterMulti(0x09, (uint8_t *) &nul, 4);
-        NRF24L01_WriteRegisterMulti(0x0A, (uint8_t *) &nul, 4);
-        NRF24L01_WriteRegisterMulti(0x0B, (uint8_t *) &nul, 4);
-        NRF24L01_WriteRegisterMulti(0x0C, (uint8_t *) "\x00\x12\x73\x00", 4);
-        NRF24L01_WriteRegisterMulti(0x0D, (uint8_t *) "\x46\xB4\x80\x00", 4);
+
+        NRF24L01_WriteRegisterMulti(0x05, (uint8_t *) "\x24\x06\x7F\xA6", 4); // Disable RSSI
+//        NRF24L01_WriteRegisterMulti(0x05, (uint8_t *) "\x3C\x02\x7F\xA6", 4); // Enable RSSI
+
+//        NRF24L01_WriteRegisterMulti(0x0C, (uint8_t *) "\x00\x12\x73\x00", 4); // PLL locking time 120us, like BK2421
+        NRF24L01_WriteRegisterMulti(0x0C, (uint8_t *) "\x00\x12\x73\x05", 4); // PLL locking time 130us, like nRF24L01
+//        NRF24L01_WriteRegisterMulti(0x0D, (uint8_t *) "\x46\xB4\x80\x00", 4);
+        NRF24L01_WriteRegisterMulti(0x0D, (uint8_t *) "\x36\xB4\x80\x00", 4);
         NRF24L01_WriteRegisterMulti(0x0E, (uint8_t *) "\x41\x10\x04\x82\x20\x08\x08\xF2\x7D\xEF\xFF", 11);
+
         NRF24L01_WriteRegisterMulti(0x04, (uint8_t *) "\xC7\x96\x9A\x1B", 4);
         NRF24L01_WriteRegisterMulti(0x04, (uint8_t *) "\xC1\x96\x9A\x1B", 4);
     } else {
