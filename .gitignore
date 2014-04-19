@@ -4,3 +4,5 @@ obj-Mini51/
 *.uvopt
 *.uvgui.*
 *.bak
+*.map
+*.lst
