@@ -239,9 +239,9 @@ void evaluatecommand(char portnumber, unsigned char *data)
 //usersettings.pid_igain[ROLLINDEX]=usersettings.pid_igain[PITCHINDEX];
 //usersettings.pid_dgain[ROLLINDEX]=usersettings.pid_dgain[PITCHINDEX];
         sendgoodheader(portnumber, 0);
-    } else if (command == MSP_DEBUG) {  // send attitude data
+    } else if (command == MSP_DEBUG) {  // send debug data
         sendgoodheader(portnumber, 8);
-        for (int x = 0; x < 4; ++x) {   // convert from g's to what multiwii uses
+        for (int x = 0; x < 4; ++x) {
             int value = global.debugvalue[x];
             sendandchecksumdata(portnumber, (unsigned char *) &value, 2);
         }

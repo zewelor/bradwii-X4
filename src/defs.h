@@ -48,6 +48,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define RXNUMCHANNELS 8
 
+#ifndef ARMED_MIN_MOTOR_OUTPUT
+#define ARMED_MIN_MOTOR_OUTPUT 1020     // motors spin slowly when armed
+#endif
+
+#ifndef THROTTLE_TO_MOTOR_OFFSET
+#define THROTTLE_TO_MOTOR_OFFSET 0      // motors spin slowly when armed
+#endif
+// by default don't allow the motors to stop when armed if not in acro or semi acro mode
+#ifndef MOTORS_STOP
+#define MOTORS_STOP NO
+#endif
+
 // LED Outputs
 #define LED1_OUTPUT (DIGITALPORT0 | 0)
 #ifndef LED1_ON

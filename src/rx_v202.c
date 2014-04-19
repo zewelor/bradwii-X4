@@ -76,14 +76,17 @@ static const uint8_t v2x2_freq_hopping[][V2X2_NFREQCHANNELS] = {
 
 static uint8_t rf_channels[MAXFHSIZE];
 static uint8_t packet[V2X2_PAYLOAD_SIZE];
-static uint32_t valid_packet_received;
 static uint8_t rf_ch_num;
 static uint8_t nfreqchannels;
 static uint8_t bound;
 static uint32_t packet_timer;
 static uint32_t rx_timeout;
-static uint32_t missed_packets;
-static uint32_t bad_packets;
+//static uint32_t valid_packets;
+//static uint32_t missed_packets;
+//static uint32_t bad_packets;
+#define valid_packets (global.debugvalue[0])
+#define missed_packets (global.debugvalue[1])
+#define bad_packets (global.debugvalue[2])
 
 static void v2x2_set_tx_id(uint8_t *id)
 {
@@ -189,7 +192,6 @@ void initrx(void)
     NRF24L01_FlushTx();
     NRF24L01_FlushRx();
 
-    valid_packet_received = 0;
     rf_ch_num = 0;
 
     // Turn radio power on
@@ -198,7 +200,7 @@ void initrx(void)
     // delayMicroseconds(150);
     lib_timers_delaymilliseconds(1); // 6 times more than needed
     
-    valid_packet_received = missed_packets = bad_packets = 0;
+    valid_packets = missed_packets = bad_packets = 0;
     
     if (usersettings.boundprotocol == BOUND_PROTO_NONE) {
         // Prepare to bind
@@ -254,7 +256,7 @@ static bool decode_packet(uint8_t *packet, uint16_t *data)
             data[v2x2_channelindex[i]] = 1000 + ((packet[14] & flags[i-4]) ? 1000 : 0);
         }
         packet_timer = lib_timers_starttimer();
-        valid_packet_received++;
+        valid_packets++;
         return true;
     }
 }

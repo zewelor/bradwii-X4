@@ -56,12 +56,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // uncomment to allow arming and disarming with the sticks:
 // Arming and disarming only happen at low throttle
 // Uncomment the following two lines to allow arming using yaw
-//#define STICK_ARM STICK_COMMAND_YAW_HIGH
-//#define STICK_DISARM STICK_COMMAND_YAW_LOW
+#define STICK_ARM STICK_COMMAND_YAW_HIGH
+#define STICK_DISARM STICK_COMMAND_YAW_LOW
 
 // uncomment the following two lines to allow arming using yaw, roll, and pitch all at once
-#define STICK_ARM STICK_COMMAND_YAW_HIGH+STICK_COMMAND_ROLL_HIGH+STICK_COMMAND_PITCH_LOW
-#define STICK_DISARM STICK_COMMAND_YAW_LOW+STICK_COMMAND_ROLL_LOW+STICK_COMMAND_PITCH_LOW
+//#define STICK_ARM STICK_COMMAND_YAW_HIGH+STICK_COMMAND_ROLL_HIGH+STICK_COMMAND_PITCH_LOW
+//#define STICK_DISARM STICK_COMMAND_YAW_LOW+STICK_COMMAND_ROLL_LOW+STICK_COMMAND_PITCH_LOW
 
 // Choose an aircraft configuration (defaults to QUADX)
 //#define AIRCRAFT_CONFIGURATION QUADX
@@ -107,7 +107,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //#define MOTORS_STOP YES
 
 // set the minimum motor output when armed. If not set, 1067 will be used as a default
-#define ARMED_MIN_MOTOR_OUTPUT 1067     // motors spin slowly when armed
+#define ARMED_MIN_MOTOR_OUTPUT 1025     // motors spin slowly when armed
 //#define ARMED_MIN_MOTOR_OUTPUT 1170 // motors spin slowly when armed (for blheli flashed q-brain)
 
 // Optionally set an offset from RX Input to ESC output.  Usually used to make sure
