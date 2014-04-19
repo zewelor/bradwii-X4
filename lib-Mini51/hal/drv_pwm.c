@@ -22,8 +22,8 @@ bool pwmInit(drv_pwm_config_t *init)
     SYS->P0_MFP |= SYS_MFP_P04_PWM5;
     
     //
-#define MWII_PWM_MAX  16000
-#define MWII_PWM_PRE    10
+#define MWII_PWM_MAX  1000
+#define MWII_PWM_PRE    1
 #define MWII_PWM_MASK ((1 << 2) | (1 << 3) | (1 << 4) | (1 << 5))
 
 //    SYS_ResetModule(PWM_RST);
@@ -67,7 +67,7 @@ void pwmWriteMotor(uint8_t index, uint16_t value)
     // Motor 3 FRONT_L - PWM2
     if (index > 3) return;
     static uint8_t motor_to_pwm[] = { 4, 5, 3, 2 };
-    PWM_SET_CMR(PWM, motor_to_pwm[index], (value-1000)*16);
+    PWM_SET_CMR(PWM, motor_to_pwm[index], value-1000);
 }
 
 // Not implmented
