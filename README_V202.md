@@ -1,8 +1,8 @@
 bradwii for V202
 =======
 
-This is a port bradwii to another ARM architecture, Nuvoton Mini51 which is represented
-by commercial microhelis WL-Toys V202, V252, and JXD385. For hardware description
+This is a port of bradwii to another ARM architecture, Nuvoton Mini51 which is represented
+by commercial microhelis WL-Toys V202, V252, and JXD JD-385. For hardware description
 details see https://github.com/hackocopter/JD385_Documentation .
 
 Briefly, it uses MINI54ZAN ARM MCU with 16KB ROM and 2KB RAM, combined gyro/accelerometer
