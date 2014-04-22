@@ -47,12 +47,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define NAVIGATIONMODERETURNTOHOME 2
 
 #if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
-// Definitions for a group of nRF24L01 based protocols
-#define BOUND_PROTO_NONE  0
-#define BOUND_PROTO_V2X2  1
-#define BOUND_PROTO_HISKY 2
-#define BOUND_PROTO_SLT   3
-
 #define MAXTXIDSIZE 5 // maximum TX id length
 #define MAXFHSIZE 20  // maximum frequency hopping size
 #endif    
@@ -75,9 +69,9 @@ typedef struct {
     fixedpointnum compassvector[3];     // A unit vector (approximately) poining in the direction our 3d compass is pointing
     fixedpointnum heading_when_armed;   // the heading we were pointing when arming was established
     fixedpointnum altitude_when_armed;  // The altitude when arming established
-    unsigned int motoroutputvalue[NUMMOTORS];   // Output values to send to our motors, from 1000 to 2000
-    unsigned long activecheckboxitems;  // Bits for each checkbox item to show which are currently active
-    unsigned long previousactivecheckboxitems;  // The previous state of these bits so we can tell when they turn on and off
+    uint16_t      motoroutputvalue[NUMMOTORS];   // Output values to send to our motors, from 1000 to 2000
+    uint32_t      activecheckboxitems;  // Bits for each checkbox item to show which are currently active
+    uint32_t      previousactivecheckboxitems;  // The previous state of these bits so we can tell when they turn on and off
     unsigned char armed;        // A flag indicating that the aircraft is armed
     unsigned char gps_num_satelites;    // How many satelites do we currently see?
     fixedpointnum gps_home_latitude;    // The latitude when the aircraft was armed
@@ -90,7 +84,7 @@ typedef struct {
     fixedpointnum navigation_bearing;   // The bearing from the last waypoint to the next one
     unsigned char navigationmode;       // See navigation.h
     unsigned char stable;       // Set to 1 when our gravity vector is close to unit length
-    unsigned long failsafetimer;        // Timer for determining if we lose radio contact
+    uint32_t      failsafetimer;        // Timer for determining if we lose radio contact
 } globalstruct;
 
 // put all of the user adjustable settings in one structure to make it easy to read and write to eeprom.
@@ -100,11 +94,11 @@ typedef struct {
     fixedpointnum pid_pgain[NUMPIDITEMS];       // The various PID p gains
     fixedpointnum pid_igain[NUMPIDITEMS];       // The various PID i gains
     fixedpointnum pid_dgain[NUMPIDITEMS];       // The various PID d gains
-    unsigned int checkboxconfiguration[NUMPOSSIBLECHECKBOXES];  // Bits that describe how the checkboxes are configured
+    uint16_t      checkboxconfiguration[NUMPOSSIBLECHECKBOXES];  // Bits that describe how the checkboxes are configured
     fixedpointnum gyrocalibration[3];   // Offsets used to calibrate the gyro
     fixedpointnum acccalibration[3];    // Offsets used to calibrate the accelerometer
     fixedpointnum compasscalibrationmultiplier[3];      // Multipliers used to calibrate the compass
-    int compasszerooffset[3];   // Offsets used to calibrate the compass
+    int16_t compasszerooffset[3];   // Offsets used to calibrate the compass
     fixedpointnum maxpitchandrollrate;  // maximum pitch and roll rate (by pilot input) in degrees/sec
 #if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
     // Embedded RX stores binding info here

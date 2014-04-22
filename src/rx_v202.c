@@ -40,6 +40,16 @@ extern usersettingsstruct usersettings;        // user editable variables
 #define BV(x) (1 << (x))
 
 ///////////////////////////////////////////////////////////////////////
+// Definitions for a group of nRF24L01 based protocols
+enum Proto {
+    PROTO_NONE = 0,
+    PROTO_V2X2,
+    PROTO_HISKY,
+    PROTO_SLT,
+};
+
+
+///////////////////////////////////////////////////////////////////////
 // V2X2 protocol
 
 #define V2X2_PAYLOAD_SIZE 16
@@ -78,20 +88,22 @@ static uint8_t rf_channels[MAXFHSIZE];
 static uint8_t packet[V2X2_PAYLOAD_SIZE];
 static uint8_t rf_ch_num;
 static uint8_t nfreqchannels;
-static uint8_t bound;
+static uint8_t boundprotocol;
+static uint8_t tryprotocol;
 static uint32_t packet_timer;
-static uint32_t rx_timeout;
+//static uint32_t rx_timeout;
 //static uint32_t valid_packets;
 //static uint32_t missed_packets;
 //static uint32_t bad_packets;
 #define valid_packets (global.debugvalue[0])
 #define missed_packets (global.debugvalue[1])
 #define bad_packets (global.debugvalue[2])
+#define rx_timeout (global.debugvalue[3])
 
 static void v2x2_set_tx_id(uint8_t *id)
 {
     uint8_t sum;
-    usersettings.boundprotocol = BOUND_PROTO_V2X2;
+    boundprotocol = usersettings.boundprotocol = PROTO_V2X2;
     usersettings.txidsize = 3;
     usersettings.txid[0] = id[0];
     usersettings.txid[1] = id[1];
@@ -112,11 +124,31 @@ static void v2x2_set_tx_id(uint8_t *id)
 
 static void set_bound()
 {
-    bound = true;
+    boundprotocol = usersettings.boundprotocol;
     for (int i = 0; i < usersettings.fhsize; ++i) {
         rf_channels[i] = usersettings.freqhopping[i];
     }
+    nfreqchannels = usersettings.fhsize;
     rx_timeout = 1000L; // find the channel as fast as possible
+}
+
+static void prepare_to_bind(void)
+    {
+    packet_timer = lib_timers_starttimer();
+    tryprotocol = PROTO_V2X2;
+    for (int i = 0; i < V2X2_NFREQCHANNELS; ++i) {
+        rf_channels[i] = v2x2_freq_hopping[0][i];
+    }
+    nfreqchannels = V2X2_NFREQCHANNELS;
+    rx_timeout = 1000L;
+    boundprotocol = PROTO_NONE;
+}
+
+
+static void switch_channel(void)
+{
+    NRF24L01_WriteReg(NRF24L01_05_RF_CH, rf_channels[rf_ch_num]);
+    if (++rf_ch_num >= nfreqchannels) rf_ch_num = 0;
 }
 
 static void initialize_beken(void)
@@ -128,6 +160,7 @@ static void initialize_beken(void)
     // closing activate command changes state back even if it
     // does something on nRF24L01
     // For detailed description of what's happening here see 
+    //   http://www.inhaos.com/uploadfile/otherpic/BK2423%20Datasheet%20v2.0.pdf
     //   http://www.inhaos.com/uploadfile/otherpic/AN0008-BK2423%20Communication%20In%20250Kbps%20Air%20Rate.pdf
     NRF24L01_Activate(0x53); // magic for BK2421/BK2423 bank switch
     printf("Trying to switch banks\n");
@@ -140,7 +173,7 @@ static void initialize_beken(void)
         NRF24L01_WriteRegisterMulti(0x00, (uint8_t *) "\x40\x4B\x01\xE2", 4);
         NRF24L01_WriteRegisterMulti(0x01, (uint8_t *) "\xC0\x4B\x00\x00", 4);
         NRF24L01_WriteRegisterMulti(0x02, (uint8_t *) "\xD0\xFC\x8C\x02", 4);
-//        NRF24L01_WriteRegisterMulti(0x03, (uint8_t *) "\xF9\x00\x39\x21", 4);
+//        NRF24L01_WriteRegisterMulti(0x03, (uint8_t *) "\xF9\x00\x39\x21", 4); // V202
         NRF24L01_WriteRegisterMulti(0x03, (uint8_t *) "\x99\x00\x39\x41", 4);
         NRF24L01_WriteRegisterMulti(0x04, (uint8_t *) "\xC1\x96\x9A\x1B", 4);
 
@@ -202,38 +235,42 @@ void initrx(void)
     
     valid_packets = missed_packets = bad_packets = 0;
     
-    if (usersettings.boundprotocol == BOUND_PROTO_NONE) {
-        // Prepare to bind
-        packet_timer = lib_timers_starttimer();
-        for (int i = 0; i < V2X2_NFREQCHANNELS; ++i) {
-            rf_channels[i] = v2x2_freq_hopping[0][i];
-        }
-        nfreqchannels = V2X2_NFREQCHANNELS;
-        rx_timeout = 1000L;
-        bound = false;
+    if (usersettings.boundprotocol == PROTO_NONE) {
+        prepare_to_bind();
     } else {
         // Prepare to listen to bound protocol, if fails
         // try to bind
         set_bound();
     }
+    switch_channel();
 }
 
-static void switch_channel(void)
+static void decode_bind_packet(uint8_t *packet)
 {
-    NRF24L01_WriteReg(NRF24L01_05_RF_CH, rf_channels[rf_ch_num]);
-    if (++rf_ch_num >= nfreqchannels) rf_ch_num = 0;
+    switch (tryprotocol) {
+    case PROTO_V2X2:
+        if ((packet[14] & V2X2_FLAG_BIND) == V2X2_FLAG_BIND) {
+            // Fill out usersettings with bound protocol parameters
+            v2x2_set_tx_id(&packet[7]);
+            // Read usersettings into current values
+            set_bound();
+        }
+        break;
+    }
 }
 
+// Returns whether the data was successfully decoded
 static bool decode_packet(uint8_t *packet, uint16_t *data)
 {
-    // Decode packet
-    if ((packet[14] & V2X2_FLAG_BIND) == V2X2_FLAG_BIND) {
-        if (bound) return false;
-        v2x2_set_tx_id(&packet[7]);
-        set_bound();
-        return false;
-    } else {
-        if (!bound) return false;
+    switch (boundprotocol) {
+    case PROTO_NONE:
+        decode_bind_packet(packet);
+        break;
+    case PROTO_V2X2:
+        // Decode packet
+        if ((packet[14] & V2X2_FLAG_BIND) == V2X2_FLAG_BIND) {
+            return false;
+        }
         if (packet[7] != usersettings.txid[0] ||
             packet[8] != usersettings.txid[1] ||
             packet[9] != usersettings.txid[2])
@@ -242,7 +279,8 @@ static bool decode_packet(uint8_t *packet, uint16_t *data)
             return false;
         }
         // Restore regular interval
-        rx_timeout = 10000L; // 4ms regular interval + 25%
+        //rx_timeout = 5000L; // 4ms regular interval + 25%
+        rx_timeout = 10000L;
         // TREA order in packet to MultiWii order is handled by
         // correct assignment to channelindex
         // Throttle 0..255 to 1000..2000
@@ -259,6 +297,7 @@ static bool decode_packet(uint8_t *packet, uint16_t *data)
         valid_packets++;
         return true;
     }
+    return false;
 }
 
 void readrx(void)
@@ -269,12 +308,13 @@ void readrx(void)
     if (!(NRF24L01_ReadReg(NRF24L01_07_STATUS) & BV(NRF24L01_07_RX_DR))) {
         uint32_t t = lib_timers_gettimermicroseconds(packet_timer);
         if (t > rx_timeout) {
-            if (bound) missed_packets++;
+            if (boundprotocol != PROTO_NONE) missed_packets++;
             else switch_channel();
             packet_timer = lib_timers_starttimer();
         }
         return;
     }
+    packet_timer = lib_timers_starttimer();
     NRF24L01_WriteReg(NRF24L01_07_STATUS, BV(NRF24L01_07_RX_DR));
     NRF24L01_ReadPayload(packet, V2X2_PAYLOAD_SIZE);
     NRF24L01_FlushRx();

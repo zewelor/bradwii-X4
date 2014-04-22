@@ -471,7 +471,7 @@ void defaultusersettings(void)
         usersettings.acccalibration[x] = 0;
     }
 #if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
-    usersettings.boundprotocol = BOUND_PROTO_NONE;
+    usersettings.boundprotocol = 0; // PROTO_NONE
     usersettings.txidsize = 0;
     usersettings.fhsize = 0;
 #endif

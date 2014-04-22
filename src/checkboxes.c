@@ -33,7 +33,7 @@ void checkcheckboxitems(void)
     global.previousactivecheckboxitems = global.activecheckboxitems;
     global.activecheckboxitems = 0;
 
-    unsigned int mask = 0;      // a mask of what aux states are true
+    uint16_t mask = 0;      // a mask of what aux states are true
 #if (RXNUMCHANNELS>4)
     if (global.rxvalues[AUX1INDEX] < FPAUXMIDRANGELOW)  // low
         mask |= (1 << 0);
@@ -72,7 +72,7 @@ void checkcheckboxitems(void)
 
     for (int x = 0; x < NUMCHECKBOXES; ++x) {
         if (usersettings.checkboxconfiguration[x] & mask)
-            global.activecheckboxitems |= (1L << x);
+            global.activecheckboxitems |= (1 << x);
     }
 
 #if (defined(STICK_ARM) | defined (STICK_DISARM))
