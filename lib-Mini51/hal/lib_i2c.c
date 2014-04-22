@@ -32,6 +32,7 @@ static inline int I2C_WAIT_READY_ERROR(I2C_T *i2c)
 
 void lib_i2c_init(void)
 {
+    SYS_ResetModule(I2C_RST);
     CLK_EnableModuleClock(I2C_MODULE);
 
     // Set P3.4 and P3.5 for I2C SDA and SCL

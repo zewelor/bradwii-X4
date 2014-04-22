@@ -3,6 +3,7 @@
 #include "drv_pwm.h"
 #include "drv_gpio.h"
 
+#include "lib_timers.h"
 #include "lib_i2c.h"
 #include "lib_spi.h"
 
@@ -23,10 +24,10 @@ void lib_hal_init(void)
     // Init System Clock
 
     // Enable internal 22.1184MHz
-//    CLK->PWRCON |= CLK_PWRCON_IRC22M_EN_Msk;
+    CLK->PWRCON |= CLK_PWRCON_IRC22M_EN_Msk;
 
     // Waiting for clock ready
-//    CLK_WaitClockReady(CLK_CLKSTATUS_IRC22M_STB_Msk);
+    CLK_WaitClockReady(CLK_CLKSTATUS_IRC22M_STB_Msk);
 
     /* Switch HCLK clock source to XTL */
    // CLK_SetHCLK(CLK_CLKSEL0_HCLK_S_XTAL,CLK_CLKDIV_HCLK(1));
@@ -37,7 +38,9 @@ void lib_hal_init(void)
     // Stay with reset value = internal oscillator
 
     // Update SystemCoreClock and CyclesPerUs
-    SystemCoreClockUpdate();         
+    SystemCoreClockUpdate();
+    
+    lib_timers_init();
     
     FMC_Open();
     if (set_data_flash_base(FLASH_WRITE_ADDR) == 0)
@@ -45,7 +48,6 @@ void lib_hal_init(void)
         flash_available = true;
     }
     FMC_Close();
-    
 
     // Init UART clock
     uartInit();
@@ -58,41 +60,10 @@ void lib_hal_init(void)
     lib_spi_init();
 
     SYS_LockReg();
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
-#else
-    gpio_config_t gpio;
-    drv_pwm_config_t pwm;
-
-    // Turn on clocks for stuff we use
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4 | RCC_APB1Periph_I2C2, ENABLE);
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO | RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC | RCC_APB2Periph_TIM1 | RCC_APB2Periph_ADC1 | RCC_APB2Periph_USART1, ENABLE);
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
-    RCC_ClearFlag();
-
-    // Make all GPIO in by default to save power and reduce noise
-    gpio.pin = Pin_All;
-    gpio.mode = Mode_AIN;
-    gpioInit(GPIOA, &gpio);
-    gpioInit(GPIOB, &gpio);
-    gpioInit(GPIOC, &gpio);
-
-    pwm.airplane = false;
-    pwm.useUART = false;
-    pwm.usePPM = true;
-    pwm.enableInput = true;
-    pwm.useServos = false;
-    pwm.extraServos = false;
-    pwm.motorPwmRate = 498;
-    pwm.servoPwmRate = 50;
-
-    pwmInit(&pwm);
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////
 // EEPROM
-
-//static uint8_t eep[EEP_SIZE];
 
 // Mask for alignment by word boundary
 #define ALIGN_SIZE sizeof(int)
@@ -165,6 +136,11 @@ size_t eeprom_read_block(void *dst, uint16_t index, size_t size)
     FMC_Close();
     SYS_LockReg();
     
+    // Long data flash reads influence I2C and SPI buses,
+    // we need to reinitialize them.
+    lib_i2c_init();
+    lib_spi_init();
+
     return size;
 }
 

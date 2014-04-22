@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 void lib_spi_init(void)
 {
+    SYS_ResetModule(SPI_RST);
     CLK_EnableModuleClock(SPI_MODULE);
 
     CLK->CLKSEL1 |= CLK_CLKSEL1_SPI_S_HCLK;
