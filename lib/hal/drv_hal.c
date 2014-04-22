@@ -50,9 +50,10 @@ void lib_hal_init(void)
 
 static uint8_t eep[EEP_SIZE];
 
-void eeprom_write_block (const void *src, uint16_t index, size_t size)
+size_t eeprom_write_block (const void *src, uint16_t index, size_t size)
 {
     memcpy(eep + index, src, size);
+    return size;
 }
 
 void eeprom_commit(void)
@@ -81,7 +82,8 @@ retry:
     FLASH_Lock();
 }
 
-void eeprom_read_block (void *dst, uint16_t index, size_t size)
+size_t eeprom_read_block (void *dst, uint16_t index, size_t size)
 {
     memcpy(dst, (char *)FLASH_WRITE_ADDR + index, size);
+    return size;
 }

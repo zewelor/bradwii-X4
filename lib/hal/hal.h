@@ -17,6 +17,7 @@
 #include "drv_pwm.h"
 
 void lib_hal_init(void);
-void eeprom_read_block (void *dst, uint16_t index, size_t size);
-void eeprom_write_block (const void *src, uint16_t index, size_t size);
+// eeprom_read and eeprom_write return number of read/written bytes
+size_t eeprom_read_block (void *dst, uint16_t index, size_t size);
+size_t eeprom_write_block (const void *src, uint16_t index, size_t size);
 void eeprom_commit(void);
