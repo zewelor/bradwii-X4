@@ -9,7 +9,7 @@
 ; * Copyright (C) 2013 Nuvoton Technology Corp. All rights reserved.
 ;*****************************************************************************/  
 
-Stack_Size      EQU     0x00000180
+Stack_Size      EQU     0x00000200
 
                 AREA    STACK, NOINIT, READWRITE, ALIGN=3
 Stack_Mem       SPACE   Stack_Size
