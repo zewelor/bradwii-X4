@@ -1,5 +1,6 @@
 #include "hal.h"
 #include "drv_pwm.h"
+#include "config.h"
 
 #define PULSE_1MS       (1000) // 1ms pulse width
 
@@ -61,12 +62,20 @@ bool pwmInit(drv_pwm_config_t *init)
 }
 void pwmWriteMotor(uint8_t index, uint16_t value)
 {
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
     // Motor 0 BACK_R  - PWM4
     // Motor 1 FRONT_R - PWM5
     // Motor 2 BACK_L  - PWM3
     // Motor 3 FRONT_L - PWM2
-    if (index > 3) return;
     static uint8_t motor_to_pwm[] = { 4, 5, 3, 2 };
+#elif CONTROL_BOARD_TYPE == CONTROL_BOARD_JXD_JD385
+    // Motor 0 BACK_R  - PWM2
+    // Motor 1 FRONT_R - PWM3
+    // Motor 2 BACK_L  - PWM5
+    // Motor 3 FRONT_L - PWM4
+    static uint8_t motor_to_pwm[] = { 2, 3, 5, 4 };
+#endif
+    if (index > 3) return;
     PWM_SET_CMR(PWM, motor_to_pwm[index], value-1000);
 }
 

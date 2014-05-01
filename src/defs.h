@@ -66,6 +66,50 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LED1_ON DIGITALON
 #endif
 
+#elif CONTROL_BOARD_TYPE == CONTROL_BOARD_JXD_JD385
+
+#define GYRO_TYPE MPU6050       // gyro
+#define GYRO_ORIENTATION(VALUES,X, Y, Z) {VALUES[ROLLINDEX] =  -X; VALUES[PITCHINDEX] = -Y; VALUES[YAWINDEX] = -Z;}
+
+#define ACCELEROMETER_TYPE MPU6050      // accelerometer
+#define ACC_ORIENTATION(VALUES,X, Y, Z)  {VALUES[ROLLINDEX]  = -Y; VALUES[PITCHINDEX]  = X; VALUES[YAWINDEX]  =  -Z;}
+
+#ifndef COMPASS_TYPE
+#define COMPASS_TYPE NO_COMPASS
+#endif
+
+#ifndef BAROMETER_TYPE
+#define BAROMETER_TYPE NO_BAROMETER
+#endif
+
+#ifndef MULTIWII_CONFIG_SERIAL_PORTS
+#define MULTIWII_CONFIG_SERIAL_PORTS SERIALPORT0
+#endif
+
+#ifndef GPS_TYPE
+#define GPS_TYPE NO_GPS
+#endif
+
+#define RXNUMCHANNELS 8
+
+#ifndef ARMED_MIN_MOTOR_OUTPUT
+#define ARMED_MIN_MOTOR_OUTPUT 1015     // motors spin slowly when armed
+#endif
+
+#ifndef THROTTLE_TO_MOTOR_OFFSET
+#define THROTTLE_TO_MOTOR_OFFSET 0      // motors spin slowly when armed
+#endif
+// by default don't allow the motors to stop when armed if not in acro or semi acro mode
+#ifndef MOTORS_STOP
+#define MOTORS_STOP NO
+#endif
+
+// LED Outputs
+#define LED1_OUTPUT (DIGITALPORT0 | 0)
+#ifndef LED1_ON
+#define LED1_ON DIGITALON
+#endif
+
 #else
 
 #define GYRO_TYPE MPU6050       // gyro

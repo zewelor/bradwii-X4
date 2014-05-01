@@ -136,11 +136,6 @@ size_t eeprom_read_block(void *dst, uint16_t index, size_t size)
     FMC_Close();
     SYS_LockReg();
     
-    // Long data flash reads influence I2C and SPI buses,
-    // we need to reinitialize them.
-    lib_i2c_init();
-    lib_spi_init();
-
     return size;
 }
 

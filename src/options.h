@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define CONTROL_BOARD_WITESPY_MULTIWII_PRO_2 9
 #define CONTROL_BOARD_WITESPY_MULTIWII_PRO_2_GPS 10
 #define CONTROL_BOARD_WLT_V202 100
+#define CONTROL_BOARD_JXD_JD385 101
 
 // MICROCONTROLLER_TYPE's
 #define MEGA2560 0

@@ -22,7 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 void lib_spi_init(void)
 {
-    SYS_ResetModule(SPI_RST);
     CLK_EnableModuleClock(SPI_MODULE);
 
     CLK->CLKSEL1 |= CLK_CLKSEL1_SPI_S_HCLK;
@@ -30,6 +29,10 @@ void lib_spi_init(void)
     // MFP pin configuration
     SYS->P0_MFP |= SYS_MFP_P01_SPISS | SYS_MFP_P05_MOSI | SYS_MFP_P06_MISO | SYS_MFP_P07_SPICLK;
 
+    //SYS_ResetModule(SPI_RST);
+    SYS->IPRSTC2 |=  SYS_IPRSTC2_SPI_RST_Msk;
+    SYS->IPRSTC2 &= ~SYS_IPRSTC2_SPI_RST_Msk;
+    
     // Configure as a master, clock idle low,
     // falling clock edge Tx, rising edge Rx and 32-bit transaction
     CLK->APBCLK |= CLK_APBCLK_SPI_EN_Msk;

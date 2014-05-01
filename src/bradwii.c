@@ -430,7 +430,7 @@ void defaultusersettings(void)
     global.usersettingsfromeeprom = 0;  // this should get set to one if we read from eeprom
 
     // set default acro mode rotation rates
-    usersettings.maxyawrate = 200L << FIXEDPOINTSHIFT;  // degrees per second
+    usersettings.maxyawrate = 400L << FIXEDPOINTSHIFT;  // degrees per second
     usersettings.maxpitchandrollrate = 400L << FIXEDPOINTSHIFT; // degrees per second
 
     // set default PID settings

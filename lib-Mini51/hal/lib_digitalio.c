@@ -38,8 +38,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //      if (newstate==DIGITALON) {}
 //      }
 
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
-
 void lib_digitalio_initpin(unsigned char portandpinnumber, unsigned char output)
 {
     uint8_t port = (portandpinnumber & 0xF0) >> 4;
@@ -49,75 +47,20 @@ void lib_digitalio_initpin(unsigned char portandpinnumber, unsigned char output)
     GPIO_SetMode(((GPIO_T *) (P0_BASE + 0x40*port)), (1 << pin), mode);
 }
 
-unsigned char lib_digitalio_getinput(unsigned char portandpinnumber)
-{
-    return 0;
-}
+// NOT IMPLEMENTED
+//unsigned char lib_digitalio_getinput(unsigned char portandpinnumber)
+//{
+//    return 0;
+//}
+
 void lib_digitalio_setoutput(unsigned char portandpinnumber, unsigned char value)
 {
     uint8_t port = (portandpinnumber & 0xF0) >> 4;
     uint8_t pin = portandpinnumber & 0x0F;
     GPIO_PIN_ADDR(port, pin) = value ? 1 : 0;
 }
-void lib_digitalio_setinterruptcallback(unsigned char pinnumber, digitalcallbackfunctptr callback)
-{
-    // Not implemented, no need on real hardware...
-}
-#else
-static GPIO_TypeDef *lib_digitalio_getport(unsigned char pinnumber)
-{
-    unsigned char port = pinnumber & 0xf0;
-
-    switch (port) {
-        case DIGITALPORTA:
-            return GPIOA;
-        case DIGITALPORTB:
-            return GPIOB;
-        case DIGITALPORTC:
-            return GPIOC;
-        default:
-            return NULL;
-    }
-}
-
-void lib_digitalio_initpin(unsigned char pinnumber, unsigned char output)
-{ 
-    // set pin pinnumber to be an output if output | DIGITALOUTPUT, othewise set it to be an input
-    GPIO_TypeDef *gpio = lib_digitalio_getport(pinnumber);
-    gpio_config_t cfg;
-
-    pinnumber &= 0x0f;
-
-    cfg.pin = 1 << pinnumber;
-    cfg.speed = Speed_2MHz;
-    if (output & DIGITALOUTPUT)
-        cfg.mode = Mode_Out_PP;
-    else
-        cfg.mode = Mode_IN_FLOATING;
-    gpioInit(gpio, &cfg);
-}
-
-unsigned char lib_digitalio_getinput(unsigned char pinnumber)
-{
-    GPIO_TypeDef *gpio = lib_digitalio_getport(pinnumber);
-    pinnumber &= 0x0f;
-
-    return (gpio->IDR & (1 << pinnumber)) != 0;
-}
-
-void lib_digitalio_setoutput(unsigned char pinnumber, unsigned char value)
-{
-    GPIO_TypeDef *gpio = lib_digitalio_getport(pinnumber);
-    pinnumber &= 0x0f;
-
-    if (value)
-        gpio->BRR = (1 << pinnumber);
-    else
-        gpio->BSRR = (1 << pinnumber);
-}
 
 void lib_digitalio_setinterruptcallback(unsigned char pinnumber, digitalcallbackfunctptr callback)
 {
     // Not implemented, no need on real hardware...
 }
-#endif

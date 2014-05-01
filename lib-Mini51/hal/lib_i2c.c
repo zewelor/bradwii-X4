@@ -30,15 +30,16 @@ static inline int I2C_WAIT_READY_ERROR(I2C_T *i2c)
 }
 
 
+static uint8_t initialized = 0;
 void lib_i2c_init(void)
 {
-    SYS_ResetModule(I2C_RST);
+    if (initialized) return;
     CLK_EnableModuleClock(I2C_MODULE);
 
     // Set P3.4 and P3.5 for I2C SDA and SCL
     SYS->P3_MFP = SYS_MFP_P34_SDA | SYS_MFP_P35_SCL;
 
-    /* Reset I2C */
+    // SYS_ResetModule(I2C_RST);
     SYS->IPRSTC2 |=  SYS_IPRSTC2_I2C_RST_Msk;
     SYS->IPRSTC2 &= ~SYS_IPRSTC2_I2C_RST_Msk;
 
@@ -56,6 +57,7 @@ void lib_i2c_init(void)
     /* Enable I2C interrupt */
 //    I2C->I2CON |= I2C_I2CON_EI_Msk;
 //    NVIC_EnableIRQ(I2C_IRQn);
+    initialized = 1;
 }
 
 void lib_i2c_setclockspeed(unsigned char speed){}

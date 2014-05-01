@@ -88,6 +88,7 @@ static uint8_t rf_channels[MAXFHSIZE];
 static uint8_t packet[V2X2_PAYLOAD_SIZE];
 static uint8_t rf_ch_num;
 static uint8_t nfreqchannels;
+static uint8_t bind_phase;
 static uint8_t boundprotocol;
 static uint8_t tryprotocol;
 static uint32_t packet_timer;
@@ -99,6 +100,13 @@ static uint32_t packet_timer;
 #define missed_packets (global.debugvalue[1])
 #define bad_packets (global.debugvalue[2])
 #define rx_timeout (global.debugvalue[3])
+
+enum {
+    PHASE_NOT_BOUND = 0,
+    PHASE_JUST_BOUND,
+    PHASE_LOST_BINDING,
+    PHASE_BOUND
+};
 
 static void v2x2_set_tx_id(uint8_t *id)
 {
@@ -151,17 +159,28 @@ static void switch_channel(void)
     if (++rf_ch_num >= nfreqchannels) rf_ch_num = 0;
 }
 
+// The Beken radio chip can be improperly reset
+// We try to set it into Bank 0, before that we try
+// to verify that it is there at all
+static void reset_beken(void)
+{
+    NRF24L01_Activate(0x53); // magic for BK2421/BK2423 bank switch
+    if (NRF24L01_ReadReg(NRF24L01_07_STATUS) & 0x80) {
+        NRF24L01_Activate(0x53); // switch to register set 0
+    }
+}
+
+// Check for Beken BK2421/BK2423 chip
+// It is done by using Beken specific activate code, 0x53
+// and checking that status register changed appropriately
+// There is no harm to run it on nRF24L01 because following
+// closing activate command changes state back even if it
+// does something on nRF24L01
+// For detailed description of what's happening here see 
+//   http://www.inhaos.com/uploadfile/otherpic/BK2423%20Datasheet%20v2.0.pdf
+//   http://www.inhaos.com/uploadfile/otherpic/AN0008-BK2423%20Communication%20In%20250Kbps%20Air%20Rate.pdf
 static void initialize_beken(void)
 {
-    // Check for Beken BK2421/BK2423 chip
-    // It is done by using Beken specific activate code, 0x53
-    // and checking that status register changed appropriately
-    // There is no harm to run it on nRF24L01 because following
-    // closing activate command changes state back even if it
-    // does something on nRF24L01
-    // For detailed description of what's happening here see 
-    //   http://www.inhaos.com/uploadfile/otherpic/BK2423%20Datasheet%20v2.0.pdf
-    //   http://www.inhaos.com/uploadfile/otherpic/AN0008-BK2423%20Communication%20In%20250Kbps%20Air%20Rate.pdf
     NRF24L01_Activate(0x53); // magic for BK2421/BK2423 bank switch
     printf("Trying to switch banks\n");
     if (NRF24L01_ReadReg(NRF24L01_07_STATUS) & 0x80) {
@@ -173,9 +192,9 @@ static void initialize_beken(void)
         NRF24L01_WriteRegisterMulti(0x00, (uint8_t *) "\x40\x4B\x01\xE2", 4);
         NRF24L01_WriteRegisterMulti(0x01, (uint8_t *) "\xC0\x4B\x00\x00", 4);
         NRF24L01_WriteRegisterMulti(0x02, (uint8_t *) "\xD0\xFC\x8C\x02", 4);
-//        NRF24L01_WriteRegisterMulti(0x03, (uint8_t *) "\xF9\x00\x39\x21", 4); // V202
-        NRF24L01_WriteRegisterMulti(0x03, (uint8_t *) "\x99\x00\x39\x41", 4);
-        NRF24L01_WriteRegisterMulti(0x04, (uint8_t *) "\xC1\x96\x9A\x1B", 4);
+        NRF24L01_WriteRegisterMulti(0x03, (uint8_t *) "\xF9\x00\x39\x21", 4); // V202
+//        NRF24L01_WriteRegisterMulti(0x03, (uint8_t *) "\x99\x00\x39\x41", 4); // Beken datasheet
+        NRF24L01_WriteRegisterMulti(0x04, (uint8_t *) "\xC1\x96\x9A\x1B", 4); // V202
 
         NRF24L01_WriteRegisterMulti(0x05, (uint8_t *) "\x24\x06\x7F\xA6", 4); // Disable RSSI
 //        NRF24L01_WriteRegisterMulti(0x05, (uint8_t *) "\x3C\x02\x7F\xA6", 4); // Enable RSSI
@@ -197,6 +216,8 @@ static void initialize_beken(void)
 void initrx(void)
 {
     NRF24L01_Initialize();
+    
+    reset_beken();
 
     // 2-bytes CRC, radio off
     uint8_t config = BV(NRF24L01_00_EN_CRC) | BV(NRF24L01_00_CRCO) | BV(NRF24L01_00_PRIM_RX);
@@ -236,10 +257,12 @@ void initrx(void)
     valid_packets = missed_packets = bad_packets = 0;
     
     if (usersettings.boundprotocol == PROTO_NONE) {
+        bind_phase = PHASE_NOT_BOUND;
         prepare_to_bind();
     } else {
         // Prepare to listen to bound protocol, if fails
         // try to bind
+        bind_phase = PHASE_JUST_BOUND;
         set_bound();
     }
     switch_channel();
@@ -253,6 +276,7 @@ static void decode_bind_packet(uint8_t *packet)
             // Fill out usersettings with bound protocol parameters
             v2x2_set_tx_id(&packet[7]);
             // Read usersettings into current values
+            bind_phase = PHASE_BOUND;
             set_bound();
         }
         break;
@@ -279,8 +303,7 @@ static bool decode_packet(uint8_t *packet, uint16_t *data)
             return false;
         }
         // Restore regular interval
-        //rx_timeout = 5000L; // 4ms regular interval + 25%
-        rx_timeout = 10000L;
+        rx_timeout = 10000L; // 4ms interval, duplicate packets, (8ms unique) + 25%
         // TREA order in packet to MultiWii order is handled by
         // correct assignment to channelindex
         // Throttle 0..255 to 1000..2000
@@ -294,7 +317,7 @@ static bool decode_packet(uint8_t *packet, uint16_t *data)
             data[v2x2_channelindex[i]] = 1000 + ((packet[14] & flags[i-4]) ? 1000 : 0);
         }
         packet_timer = lib_timers_starttimer();
-        valid_packets++;
+        if (++valid_packets > 50) bind_phase = PHASE_BOUND;
         return true;
     }
     return false;
@@ -308,8 +331,13 @@ void readrx(void)
     if (!(NRF24L01_ReadReg(NRF24L01_07_STATUS) & BV(NRF24L01_07_RX_DR))) {
         uint32_t t = lib_timers_gettimermicroseconds(packet_timer);
         if (t > rx_timeout) {
-            if (boundprotocol != PROTO_NONE) missed_packets++;
-            else switch_channel();
+            if (boundprotocol != PROTO_NONE) {
+                if (++missed_packets > 500 && bind_phase == PHASE_JUST_BOUND) {
+                    valid_packets = missed_packets = bad_packets = 0;
+                    bind_phase = PHASE_LOST_BINDING;
+                    prepare_to_bind();
+                }
+            } else switch_channel();
             packet_timer = lib_timers_starttimer();
         }
         return;

@@ -46,7 +46,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define NAVIGATIONMODEPOSITIONHOLD 1
 #define NAVIGATIONMODERETURNTOHOME 2
 
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202 || CONTROL_BOARD_TYPE == CONTROL_BOARD_JXD_JD385
 #define MAXTXIDSIZE 5 // maximum TX id length
 #define MAXFHSIZE 20  // maximum frequency hopping size
 #endif    
@@ -100,7 +100,7 @@ typedef struct {
     fixedpointnum compasscalibrationmultiplier[3];      // Multipliers used to calibrate the compass
     int16_t compasszerooffset[3];   // Offsets used to calibrate the compass
     fixedpointnum maxpitchandrollrate;  // maximum pitch and roll rate (by pilot input) in degrees/sec
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202 || CONTROL_BOARD_TYPE == CONTROL_BOARD_JXD_JD385
     // Embedded RX stores binding info here
     uint8_t boundprotocol;
     uint8_t txidsize;

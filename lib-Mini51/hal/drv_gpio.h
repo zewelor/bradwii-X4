@@ -1,7 +1,5 @@
 #pragma once
 
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
-
 // Mini51 ports have only 8 pin each
 typedef enum
 {
@@ -15,7 +13,8 @@ typedef enum
     Pin_7 = 0x0080,
     Pin_All = 0x00FF
 } GPIO_Pin;
-#else
+
+#if 0
 
 typedef enum
 {
