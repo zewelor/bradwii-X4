@@ -83,9 +83,11 @@ void readgyro(void)
 
 void initgyro(void)
 {
-
-    lib_i2c_writereg(MPU6050_ADDRESS, 0x6B, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
-    lib_timers_delaymilliseconds(10);
+    // Resetting the MPU6050 does not work for some reason.	
+    // But it is already in default mode at power up, so there is no need to reset it anyways
+		
+    //lib_i2c_writereg(MPU6050_ADDRESS, 0x6B, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
+    //lib_timers_delaymilliseconds(10);
     lib_i2c_writereg(MPU6050_ADDRESS, 0x6B, 0x03);      //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
     lib_i2c_writereg(MPU6050_ADDRESS, 0x1A, MPU6050_DLPF_CFG);  //CONFIG        -- EXT_SYNC_SET 0 (disable input pin for data sync) ; default DLPF_CFG = 0 => ACC bandwidth = 260Hz  GYRO bandwidth = 256Hz)
     lib_i2c_writereg(MPU6050_ADDRESS, 0x1B, 0x18);      //GYRO_CONFIG   -- FS_SEL = 3: Full scale set to 2000 deg/sec
