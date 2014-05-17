@@ -1,4 +1,4 @@
-bradwii for V202
+Bradwii for JD385,V202 and clones
 =======
 
 This is a port of bradwii to another ARM architecture, Nuvoton Mini51 which is represented
@@ -15,3 +15,10 @@ It uses M058ZBN ARM MCU with 32KB ROM and 4KB RAM, gyro InvenSense MPU-3050, sup
 accelerometer Freescale MMA8452Q (maybe ST LIS3DH), and nRF24L01 clone Si24R1.
 
 Datasheets for HMX120 are at http://www.rcgroups.com/forums/showthread.php?t=1826018&page=51#post24710038
+
+Credits
+======
+
+ * Bradwii was originally coded by Brad Quick for AVR: https://github.com/bradquick/bradwii
+ * Trollcop forked and ported to ARM STM32, untested: https://github.com/trollcop/bradwii
+ * The Mini54ZAN ARM port to V202/JD385 was done by Victor: https://github.com/victzh/bradwii
