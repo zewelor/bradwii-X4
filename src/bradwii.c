@@ -121,6 +121,9 @@ int main(void)
     // pause a moment before initializing everything. To make sure everything is powered up
     lib_timers_delaymilliseconds(100);
 
+		// set the default i2c speed to 400 Mhz.  If a device needs to slow it down, it can, but it should set it back.
+    lib_i2c_setclockspeed(I2C_400_KHZ);
+
     // initialize all other modules
     initrx();
     initoutputs();
@@ -132,8 +135,6 @@ int main(void)
     initgps();
     initimu();
 
-    // set the default i2c speed to 400 Mhz.  If a device needs to slow it down, it can, but it should set it back.
-    lib_i2c_setclockspeed(I2C_400_KHZ);
 
     global.armed = 0;
     global.navigationmode = NAVIGATIONMODEOFF;
@@ -159,6 +160,8 @@ int main(void)
 #if (GPS_TYPE!=NO_GPS)
                     navigation_sethometocurrentlocation();
 #endif
+
+										initimu(); // Recalibrate gyro when arming
                     global.heading_when_armed = global.currentestimatedeulerattitude[YAWINDEX];
                     global.altitude_when_armed = global.barorawaltitude;
                 }
