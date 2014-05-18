@@ -2,6 +2,7 @@
 #include "drv_gpio.h"
 
 #if CONTROL_BOARD_TYPE == CONTROL_BOARD_WLT_V202
+#elif CONTROL_BOARD_TYPE == CONTROL_BOARD_JXD_JD385
 #else
 void gpioInit(GPIO_TypeDef *gpio, gpio_config_t *config)
 {
