@@ -35,8 +35,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // inittimers();
 //    lib_timers_delaymilliseconds(500) {}
 
-// cycles per microsecond
-static volatile uint32_t usTicks = 0;
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
 static volatile uint32_t sysTickUptime = 0;
 
@@ -61,9 +59,13 @@ uint32_t lib_timers_getcurrentmicroseconds(void)
         ms = sysTickUptime;
         cycle_cnt = SysTick->VAL;
     } while (ms != sysTickUptime);
+#ifdef X4_BUILD
+    // goebish timer patch, use it only for X4 for now as not everyone is OK with that ?
+    return (ms * 1000) + (SystemCoreClock / 1000 - cycle_cnt) / CyclesPerUs;
+#else
     return (ms * 1000) + (CyclesPerUs * 1000 - cycle_cnt) / CyclesPerUs;
+#endif
 }
-
 
 unsigned long lib_timers_gettimermicroseconds(unsigned long starttime)
 {
