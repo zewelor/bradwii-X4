@@ -1,5 +1,5 @@
 /* 
-Copyright 2013 Brad Quick
+Copyright 2013-2014 Brad Quick
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,7 +29,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern globalstruct global;
 
-#if (ACCELEROMETER_TYPE==BMA180)
+#if (ACCELEROMETER_TYPE==MC3210)
+
+#if !defined(MC3210_ADDRESS)
+#define MC3210_ADDRESS	0x4C
+#endif
+
+void initacc(void)
+{
+    lib_timers_delaymilliseconds(10);
+    lib_i2c_writereg( MC3210_ADDRESS, 0x07, 0x43);
+    lib_i2c_writereg( MC3210_ADDRESS, 0x06, 0x10);
+    lib_i2c_writereg( MC3210_ADDRESS, 0x20, 0xBF);
+    lib_i2c_writereg( MC3210_ADDRESS, 0x07, 0x41);
+}
+
+void readacc(void)
+{
+    unsigned char data[6];
+    lib_i2c_readdata( MC3210_ADDRESS, 0x0D, (unsigned char *)&data, 6);
+    // convert readings to fixedpointnum (in g's)
+    //usefull info is on the 14 bits  [2-15] bits  /4 => [0-13] bits  /4 => 12 bit resolution
+    ACC_ORIENTATION(global.acc_g_vector,
+        (((int16_t) ((data[0] << 8) | data[1])) >> 2) * 64L,
+        (((int16_t) ((data[2] << 8) | data[3])) >> 2) * 64L,
+        (((int16_t) ((data[4] << 8) | data[5])) >> 2) * 64L);
+}
+
+#elif (ACCELEROMETER_TYPE==BMA180)
 
 #if !defined(BMA180_ADDRESS)
 #define BMA180_ADDRESS 0x40

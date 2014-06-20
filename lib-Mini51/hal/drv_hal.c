@@ -7,6 +7,8 @@
 #include "lib_i2c.h"
 #include "lib_spi.h"
 
+#include "config.h"
+#include "defs.h"
 
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x200)
 #define FLASH_WRITE_ADDR                (16*1024 - FLASH_PAGE_SIZE)  // use the last 0.5 KB for storage
@@ -50,15 +52,19 @@ void lib_hal_init(void)
     FMC_Close();
 
     // Init UART clock
+#if (MULTIWII_CONFIG_SERIAL_PORTS != NOSERIALPORT)
     uartInit();
+#endif
 
     // Init PWM clock and hardware
     drv_pwm_config_t pwm;
     pwmInit(&pwm);
 
     lib_i2c_init();
+#if (RXTYPE==RX_SPI_PROTOCOL)
     lib_spi_init();
-
+#endif
+    
     SYS_LockReg();
 }
 

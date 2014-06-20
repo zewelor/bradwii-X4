@@ -85,6 +85,8 @@ m
 #include "pilotcontrol.h"
 #include "autotune.h"
 
+#include "drv_pwm.h"   // for testing, remove
+
 globalstruct global;            // global variables
 usersettingsstruct usersettings;        // user editable variables
 
@@ -104,28 +106,35 @@ unsigned long timeslivertimer = 0;
 int main(void)
 {
     // initialize hardware
-    lib_hal_init();
+	lib_hal_init();
 
     // start with default user settings in case there's nothing in eeprom
     defaultusersettings();
+    
     // try to load usersettings from eeprom
     readusersettingsfromeeprom();
 
     // set our LED as a digital output
     lib_digitalio_initpin(LED1_OUTPUT, DIGITALOUTPUT);
 
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L
+    // extras init for Hubsan X4
+    x4_init_leds();
+    x4_set_usersettings(); // hardcoded user settings, no GUI or eeprom
+#endif
+	
     //initialize the libraries that require initialization
     lib_timers_init();
     lib_i2c_init();
 
     // pause a moment before initializing everything. To make sure everything is powered up
-    lib_timers_delaymilliseconds(100);
-
-		// set the default i2c speed to 400 Mhz.  If a device needs to slow it down, it can, but it should set it back.
-    lib_i2c_setclockspeed(I2C_400_KHZ);
-
+    lib_timers_delaymilliseconds(100); 
+		
     // initialize all other modules
     initrx();
+#if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
+    x4_set_leds(0);
+#endif
     initoutputs();
     serialinit();
     initgyro();
@@ -135,12 +144,19 @@ int main(void)
     initgps();
     initimu();
 
+#if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
+    x4_set_leds(1);
+#endif
+
+    // set the default i2c speed to 400 Mhz.  If a device needs to slow it down, it can, but it should set it back.
+    lib_i2c_setclockspeed(I2C_400_KHZ);
 
     global.armed = 0;
     global.navigationmode = NAVIGATIONMODEOFF;
     global.failsafetimer = lib_timers_starttimer();
 
     for (;;) {
+
         // check to see what switches are activated
         checkcheckboxitems();
 
@@ -160,8 +176,6 @@ int main(void)
 #if (GPS_TYPE!=NO_GPS)
                     navigation_sethometocurrentlocation();
 #endif
-
-										initimu(); // Recalibrate gyro when arming
                     global.heading_when_armed = global.currentestimatedeulerattitude[YAWINDEX];
                     global.altitude_when_armed = global.barorawaltitude;
                 }
@@ -241,7 +255,7 @@ int main(void)
 
         // get the pilot's throttle component
         // convert from fixedpoint -1 to 1 to fixedpoint 0 to 1
-        fixedpointnum throttleoutput = (global.rxvalues[THROTTLEINDEX] >> 1) +FIXEDPOINTCONSTANT(.5) + FPTHROTTLETOMOTOROFFSET;
+        fixedpointnum throttleoutput = (global.rxvalues[THROTTLEINDEX] >> 1) + FIXEDPOINTONEOVERTWO + FPTHROTTLETOMOTOROFFSET;
 
         // keep a flag to indicate whether we shoud apply altitude hold.  The pilot can turn it on or
         // uncrashability mode can turn it on.
@@ -465,8 +479,8 @@ void defaultusersettings(void)
     usersettings.checkboxconfiguration[CHECKBOXHIGHANGLE] = CHECKBOXMASKAUX1LOW;
     usersettings.checkboxconfiguration[CHECKBOXSEMIACRO] = CHECKBOXMASKAUX1HIGH;
     usersettings.checkboxconfiguration[CHECKBOXHIGHRATES] = CHECKBOXMASKAUX1HIGH;
-
-    // reset the calibration settings
+	
+		// reset the calibration settings
     for (int x = 0; x < 3; ++x) {
         usersettings.compasszerooffset[x] = 0;
         usersettings.compasscalibrationmultiplier[x] = 1L << FIXEDPOINTSHIFT;

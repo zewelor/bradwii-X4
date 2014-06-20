@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef V202_BUILD
 #include "config_V202.h"
+#elif defined X4_BUILD
+#include "config_X4.h"
 #else
 #include "config_STM32.h"
 #endif

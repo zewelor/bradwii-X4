@@ -47,11 +47,12 @@ void lib_digitalio_initpin(unsigned char portandpinnumber, unsigned char output)
     GPIO_SetMode(((GPIO_T *) (P0_BASE + 0x40*port)), (1 << pin), mode);
 }
 
-// NOT IMPLEMENTED
-//unsigned char lib_digitalio_getinput(unsigned char portandpinnumber)
-//{
-//    return 0;
-//}
+unsigned char lib_digitalio_getinput(unsigned char portandpinnumber)
+{
+    uint8_t port = (portandpinnumber & 0xF0) >> 4;
+    uint8_t pin = portandpinnumber & 0x0F;  
+    return GPIO_PIN_ADDR(port, pin);
+}
 
 void lib_digitalio_setoutput(unsigned char portandpinnumber, unsigned char value)
 {
