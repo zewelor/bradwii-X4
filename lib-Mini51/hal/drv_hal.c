@@ -61,7 +61,7 @@ void lib_hal_init(void)
     pwmInit(&pwm);
 
     lib_i2c_init();
-#if (RXTYPE==RX_SPI_PROTOCOL)
+#if (RX_TYPE==RX_SPI_PROTOCOL)
     lib_spi_init();
 #endif
     
