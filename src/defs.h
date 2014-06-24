@@ -174,7 +174,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LED1_ON DIGITALON
 #endif
 
-#else
+#else // all other control boards
 
 #define GYRO_TYPE MPU6050       // gyro
 #define GYRO_ORIENTATION(VALUES,X, Y, Z) {VALUES[ROLLINDEX] =  Y; VALUES[PITCHINDEX] = -X; VALUES[YAWINDEX] = -Z;}
@@ -208,7 +208,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LED2_ON DIGITALON
 #endif
 
-#endif
+#endif // CONTROL_BOARD_TYPE
 
 // default to QUADX if no configuration was chosen
 #ifndef AIRCRAFT_CONFIGURATION
