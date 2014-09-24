@@ -49,15 +49,16 @@ void x4_set_usersettings()
     }
     
     // flight modes, see checkboxes.h for a complete list
+    usersettings.checkboxconfiguration[CHECKBOXARM] = CHECKBOXMASKAUX1LOW;
     
     // set fullacro flight mode (gyro only) for  AUX1 high (LEDs on/off channel on stock TX)
     // default for H107L, H107C & H107D stock TXs
-    usersettings.checkboxconfiguration[CHECKBOXFULLACRO] = CHECKBOXMASKAUX1HIGH; // rate mode (gyro only)
+    //usersettings.checkboxconfiguration[CHECKBOXFULLACRO] = CHECKBOXMASKAUX1HIGH; // rate mode (gyro only)
     //usersettings.checkboxconfiguration[CHECKBOXHIGHRATES] = CHECKBOXMASKAUX1HIGH; // uncommentr for high rates
     
     // set semiacro flight mode for AUX1 low
     // default for H107 stock TX 
-    usersettings.checkboxconfiguration[CHECKBOXSEMIACRO] = CHECKBOXMASKAUX1LOW;
+    //usersettings.checkboxconfiguration[CHECKBOXSEMIACRO] = CHECKBOXMASKAUX1LOW;
     //usersettings.checkboxconfiguration[CHECKBOXHIGHANGLE] = CHECKBOXMASKAUX1LOW; // uncomment for high angle
 }
 

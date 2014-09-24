@@ -63,8 +63,8 @@ void x4_set_leds(unsigned char state);
 // uncomment to allow arming and disarming with the sticks:
 // Arming and disarming only happen at low throttle
 // Uncomment the following two lines to allow arming using yaw
-#define STICK_ARM STICK_COMMAND_YAW_HIGH
-#define STICK_DISARM STICK_COMMAND_YAW_LOW
+//#define STICK_ARM STICK_COMMAND_YAW_HIGH
+//#define STICK_DISARM STICK_COMMAND_YAW_LOW
 
 // uncomment the following two lines to allow arming using yaw, roll, and pitch all at once
 //#define STICK_ARM STICK_COMMAND_YAW_HIGH+STICK_COMMAND_ROLL_HIGH+STICK_COMMAND_PITCH_LOW
@@ -101,7 +101,7 @@ void x4_set_leds(unsigned char state);
 #define LEVEL_MODE_MAX_TILT 55  // 55 degrees
 #define LEVEL_MODE_MAX_TILT_HIGH_ANGLE 80       // 80 degrees when high angle checkbox active
 
-// Choose maximum tilt angles owhile navigating. This will determine how fast it moves from point to point.
+// Choose maximum tilt angles while navigating. This will determine how fast it moves from point to point.
 #define NAVIGATION_MAX_TILT 8   //15 degrees
 
 // Choose output ranges (in microseconds)
@@ -111,7 +111,7 @@ void x4_set_leds(unsigned char state);
 
 // Un-comment and set to YES or NO to override the default value.
 // When YES, motors will stop when throttle stick is below STICK_RANGE_LOW (see below) and not in acro or semi acro mode.
-//#define MOTORS_STOP YES
+#define MOTORS_STOP YES
 
 // set the minimum motor output when armed. If not set, 1067 will be used as a default
 #define ARMED_MIN_MOTOR_OUTPUT 1025     // motors spin slowly when armed
