@@ -136,19 +136,27 @@ int main(void)
     x4_set_leds(0);
 #endif
     initoutputs();
+#if (MULTIWII_CONFIG_SERIAL_PORTS != NOSERIALPORT)
     serialinit();
+#endif
     initgyro();
     initacc();
+#if (BAROMETER_TYPE != NO_BAROMETER)
     initbaro();
+#endif
+#if (COMPASS_TYPE != NO_COMPASS)
     initcompass();
+#endif
+#if (GPS_TYPE != NO_GPS)
     initgps();
+#endif
     initimu();
 
 #if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
     x4_set_leds(1);
 #endif
 
-    // set the default i2c speed to 400 Mhz.  If a device needs to slow it down, it can, but it should set it back.
+    // set the default i2c speed to 400 kHz.  If a device needs to slow it down, it can, but it should set it back.
     lib_i2c_setclockspeed(I2C_400_KHZ);
 
     global.armed = 0;
@@ -160,9 +168,10 @@ int main(void)
         // check to see what switches are activated
         checkcheckboxitems();
 
+#if (MULTIWII_CONFIG_SERIAL_PORTS != NOSERIALPORT)
         // check for config program activity
         serialcheckforaction();
-
+#endif
         calculatetimesliver();
 
         // run the imu to estimate the current attitude of the aircraft
@@ -209,9 +218,9 @@ int main(void)
         // read the receiver
         readrx();
 
-        // turn on the LED when we are stable and the gps has 5 satelites or more
+        // turn on the LED when we are stable and the gps has 5 satellites or more
 #if (GPS_TYPE==NO_GPS)
-        lib_digitalio_setoutput(LED1_OUTPUT, (global.stable == 0) == LED1_ON);
+        lib_digitalio_setoutput(LED1_OUTPUT, (global.stable == 0) ? (!LED1_ON) : LED1_ON);
 #else
         lib_digitalio_setoutput(LED1_OUTPUT, (!(global.stable && global.gps_num_satelites >= 5)) == LED1_ON);
 #endif
@@ -376,6 +385,10 @@ int main(void)
         }
         // if we don't hear from the receiver for over a second, try to land safely
         if (lib_timers_gettimermicroseconds(global.failsafetimer) > 1000000L) {
+#if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
+        	// Blink LED 2 while we don't have contact
+        	lib_digitalio_setoutput(LED2_OUTPUT, (lib_timers_gettimermicroseconds(0) % 250000 > 120000) ? (!LED2_ON) : LED2_ON);
+#endif
             throttleoutput = FPFAILSAFEMOTOROUTPUT;
 
             // make sure we are level!
@@ -421,11 +434,23 @@ int main(void)
         else {
             // mix the outputs to create motor values
 #if (AIRCRAFT_CONFIGURATION==QUADX)
+#if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
+        	// Hubsan X4 H107L uses QUADX configuration, but front right motor
+        	// rotates clockwise (viewed from top).
+        	// On the J385 the motors spin in the opposite direction.
+        	// -> Yaw stuff has to be reversed
+            setmotoroutput(0, 0, throttleoutput - pidoutput[ROLLINDEX] + pidoutput[PITCHINDEX] + pidoutput[YAWINDEX]);
+            setmotoroutput(1, 1, throttleoutput - pidoutput[ROLLINDEX] - pidoutput[PITCHINDEX] - pidoutput[YAWINDEX]);
+            setmotoroutput(2, 2, throttleoutput + pidoutput[ROLLINDEX] + pidoutput[PITCHINDEX] - pidoutput[YAWINDEX]);
+            setmotoroutput(3, 3, throttleoutput + pidoutput[ROLLINDEX] - pidoutput[PITCHINDEX] + pidoutput[YAWINDEX]);
+#else  // End of Hubsan
+            // Front right motor rotates ccw (viewed from top)
             setmotoroutput(0, 0, throttleoutput - pidoutput[ROLLINDEX] + pidoutput[PITCHINDEX] - pidoutput[YAWINDEX]);
             setmotoroutput(1, 1, throttleoutput - pidoutput[ROLLINDEX] - pidoutput[PITCHINDEX] + pidoutput[YAWINDEX]);
             setmotoroutput(2, 2, throttleoutput + pidoutput[ROLLINDEX] + pidoutput[PITCHINDEX] + pidoutput[YAWINDEX]);
             setmotoroutput(3, 3, throttleoutput + pidoutput[ROLLINDEX] - pidoutput[PITCHINDEX] - pidoutput[YAWINDEX]);
-#endif
+#endif // Not Hubsan
+#endif // QUADX config
         }
     }
 }
