@@ -7,3 +7,5 @@ obj-Mini51/
 *.map
 *.lst
 /Debug
+.settings/
+
