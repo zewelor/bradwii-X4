@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "mini51series.h"
+#include "Mini51Series.h"
 #include "lib_i2c.h"
 
 // referenced from app/serial.c
