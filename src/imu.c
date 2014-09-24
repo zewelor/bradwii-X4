@@ -159,7 +159,7 @@ void imucalculateestimatedattitude(void)
 
     compasstimeinterval += global.timesliver;
 
-#ifdef COMPASS_TYPE
+#if (COMPASS_TYPE != NO_COMPASS)
     int gotnewcompassreading = readcompass();
 
     if (gotnewcompassreading) {
@@ -193,7 +193,7 @@ void imucalculateestimatedattitude(void)
     }
 #endif
 
-#ifdef BAROMETER_TYPE
+#if (BAROMETER_TYPE != NO_BAROMETER)
     barotimeinterval += global.timesliver;
 
     // Integrate the accelerometer to determine the altitude velocity
