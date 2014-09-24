@@ -69,4 +69,9 @@ void AssertError(uint8_t * file, uint32_t line)
 }
 #endif
 
+void SystemInit (void)
+{
+
+}
+
 /*** (C) COPYRIGHT 2013 Nuvoton Technology Corp. ***/
