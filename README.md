@@ -50,6 +50,7 @@ Development issues:
 Resetting the board using OpenOCD and the UM232H based SWD adapter does not work. Need to check with scope what's going on.
 
 The OpenOCD Mini51 flash driver did not work for me. I had to modify it.
+Config file and modified source [here](https://gist.github.com/TheLastMutt/d1c1948acaace7444c1c).
 
 Credits
 ======
@@ -58,3 +59,8 @@ Credits
  * Trollcop forked and ported to ARM STM32, untested: https://github.com/trollcop/bradwii
  * The Mini54ZAN ARM port to V202/JD385 was done by Victor: https://github.com/victzh/bradwii
  * The Hubsan X4 H107L port was done by Goebish: https://github.com/goebish/bradwii-X4
+
+More information
+======
+http://www.rcgroups.com/forums/showthread.php?t=2174365
+https://www.mikrocontroller.net/topic/309185 (German)
