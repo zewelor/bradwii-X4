@@ -38,10 +38,17 @@ extern globalstruct global;
 void initacc(void)
 {
     lib_timers_delaymilliseconds(10);
-    lib_i2c_writereg( MC3210_ADDRESS, 0x07, 0x43);
-    lib_i2c_writereg( MC3210_ADDRESS, 0x06, 0x10);
+    // Mode register: standby mode
+    lib_i2c_writereg( MC3210_ADDRESS, 0x07, 0x03);
+    // INTEN register: disable interrupts
+    lib_i2c_writereg( MC3210_ADDRESS, 0x06, 0x00);
+    // OUTCFG register:
+    // Select +/- 8g range, 14-bit resolution
+    // Low-pass filter set to 64 Hz bandwidth
+    // (GINT interrupt updates at LPF bandwidth setting)
     lib_i2c_writereg( MC3210_ADDRESS, 0x20, 0xBF);
-    lib_i2c_writereg( MC3210_ADDRESS, 0x07, 0x41);
+    // Mode register: wake mode
+    lib_i2c_writereg( MC3210_ADDRESS, 0x07, 0x01);
 }
 
 void readacc(void)
@@ -49,11 +56,14 @@ void readacc(void)
     unsigned char data[6];
     lib_i2c_readdata( MC3210_ADDRESS, 0x0D, (unsigned char *)&data, 6);
     // convert readings to fixedpointnum (in g's)
-    //usefull info is on the 14 bits  [2-15] bits  /4 => [0-13] bits  /4 => 12 bit resolution
+    // Sensor output is 14 bit signed, sign extended to 16 bit, full scale +/- 8g
+    // So we have 13 bit fractional part, need to shift that to FIXEDPOINTSHIFT and
+    // take 8g into account (further shift by 3 bits).
+    // This only works if FIXEDPOINTSHIFT >= 10
     ACC_ORIENTATION(global.acc_g_vector,
-        (((int16_t) ((data[0] << 8) | data[1])) >> 2) * 64L,
-        (((int16_t) ((data[2] << 8) | data[3])) >> 2) * 64L,
-        (((int16_t) ((data[4] << 8) | data[5])) >> 2) * 64L);
+    	((fixedpointnum)((int16_t)((data[1] << 8) | data[0]))) << (FIXEDPOINTSHIFT - 13 + 3),
+    	((fixedpointnum)((int16_t)((data[3] << 8) | data[2]))) << (FIXEDPOINTSHIFT - 13 + 3),
+    	((fixedpointnum)((int16_t)((data[5] << 8) | data[4]))) << (FIXEDPOINTSHIFT - 13 + 3));
 }
 
 #elif (ACCELEROMETER_TYPE==BMA180)
