@@ -421,6 +421,14 @@ int main(void)
             pidoutput[x] = lib_fp_multiply(gainschedulingmultiplier, pidoutput[x]);
         }
 
+#if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
+		// On Hubsan X4 H107L the front right motor
+		// rotates clockwise (viewed from top).
+		// On the J385 the motors spin in the opposite direction.
+		// PID output for yaw has to be reversed
+        pidoutput[YAWINDEX] = -pidoutput[YAWINDEX];
+#endif
+
         lib_fp_constrain(&throttleoutput, 0, FIXEDPOINTONE);
 
         // set the final motor outputs
@@ -434,22 +442,10 @@ int main(void)
         else {
             // mix the outputs to create motor values
 #if (AIRCRAFT_CONFIGURATION==QUADX)
-#if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
-        	// Hubsan X4 H107L uses QUADX configuration, but front right motor
-        	// rotates clockwise (viewed from top).
-        	// On the J385 the motors spin in the opposite direction.
-        	// -> Yaw stuff has to be reversed
-            setmotoroutput(0, 0, throttleoutput - pidoutput[ROLLINDEX] + pidoutput[PITCHINDEX] + pidoutput[YAWINDEX]);
-            setmotoroutput(1, 1, throttleoutput - pidoutput[ROLLINDEX] - pidoutput[PITCHINDEX] - pidoutput[YAWINDEX]);
-            setmotoroutput(2, 2, throttleoutput + pidoutput[ROLLINDEX] + pidoutput[PITCHINDEX] - pidoutput[YAWINDEX]);
-            setmotoroutput(3, 3, throttleoutput + pidoutput[ROLLINDEX] - pidoutput[PITCHINDEX] + pidoutput[YAWINDEX]);
-#else  // End of Hubsan
-            // Front right motor rotates ccw (viewed from top)
             setmotoroutput(0, 0, throttleoutput - pidoutput[ROLLINDEX] + pidoutput[PITCHINDEX] - pidoutput[YAWINDEX]);
             setmotoroutput(1, 1, throttleoutput - pidoutput[ROLLINDEX] - pidoutput[PITCHINDEX] + pidoutput[YAWINDEX]);
             setmotoroutput(2, 2, throttleoutput + pidoutput[ROLLINDEX] + pidoutput[PITCHINDEX] + pidoutput[YAWINDEX]);
             setmotoroutput(3, 3, throttleoutput + pidoutput[ROLLINDEX] - pidoutput[PITCHINDEX] - pidoutput[YAWINDEX]);
-#endif // Not Hubsan
 #endif // QUADX config
         }
     }
