@@ -26,13 +26,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define GYRO_TYPE MPU3050       // gyro
 
-//#define GYRO_ORIENTATION(VALUES,X, Y, Z) {VALUES[ROLLINDEX] =  -X; VALUES[PITCHINDEX] = Y; VALUES[YAWINDEX] = Z;}
 #define GYRO_ORIENTATION(VALUES,X, Y, Z) {VALUES[ROLLINDEX] =  -Y; VALUES[PITCHINDEX] = X; VALUES[YAWINDEX] = -Z;}
 
 #define ACCELEROMETER_TYPE MC3210      // accelerometer
-
-//#define ACC_ORIENTATION(VALUES,X, Y, Z)  {VALUES[ROLLINDEX]  = Y; VALUES[PITCHINDEX]  = X; VALUES[YAWINDEX]  =  -Z;}
-#define ACC_ORIENTATION(VALUES,X, Y, Z)  {VALUES[ROLLINDEX]  = 0; VALUES[PITCHINDEX]  = 0; VALUES[YAWINDEX]  =  0;}
+// MC3210 in Hubsan X4:
+// Positive Z = level position
+// Positive Y = left side down
+// Positive X = front side down
+// In this firmware: Z=down, X=west
+#define ACC_ORIENTATION(VALUES,X, Y, Z)  {VALUES[XINDEX]  = -Y; VALUES[YINDEX]  = X; VALUES[ZINDEX]  =  Z;}
 
 #ifndef COMPASS_TYPE
 #define COMPASS_TYPE NO_COMPASS

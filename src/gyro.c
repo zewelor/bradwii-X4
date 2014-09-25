@@ -49,12 +49,14 @@ void readgyro(void)
     lib_i2c_readdata(MPU3050_ADDRESS, 0x1D, (unsigned char *) &data, 6);
 	
     // convert to fixedpointnum, in degrees per second
-    // the gyro puts out an int where each count equals 0.0609756097561 degrees/second
-    // we want fixedpointnums, so we multiply by 3996 (0.0609756097561 * (1<<FIXEDPOINTSHIFT))
+    // the gyro puts out a 16 bit signed int where each count equals 0.0609756097561 degrees/second
+    // So we have 15 bit fractional part, need to shift that to FIXEDPOINTSHIFT and
+    // take 2000deg/s into account.
+    // This only works if FIXEDPOINTSHIFT >= 15
     GYRO_ORIENTATION(global.gyrorate,
-        ((int16_t) ((data[0] << 8) | data[1])) * 3996L,       // range: +/- 8192; +/- 2000 deg/sec
-        ((int16_t) ((data[2] << 8) | data[3])) * 3996L,
-        ((int16_t) ((data[4] << 8) | data[5])) * 3996L);
+        ((int16_t) ((data[0] << 8) | data[1])) * (2000L << (FIXEDPOINTSHIFT - 15)),
+        ((int16_t) ((data[2] << 8) | data[3])) * (2000L << (FIXEDPOINTSHIFT - 15)),
+        ((int16_t) ((data[4] << 8) | data[5])) * (2000L << (FIXEDPOINTSHIFT - 15)));
 }
 
 #elif (GYRO_TYPE==ITG3200)

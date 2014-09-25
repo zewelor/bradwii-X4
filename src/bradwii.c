@@ -408,7 +408,15 @@ int main(void)
             pidoutput[x] = lib_fp_multiply(gainschedulingmultiplier, pidoutput[x]);
         }
 
-        lib_fp_constrain(&throttleoutput, 0, FIXEDPOINTONE);
+#if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
+        // On Hubsan X4 H107L the front right motor
+        // rotates clockwise (viewed from top).
+        // On the J385 the motors spin in the opposite direction.
+        // PID output for yaw has to be reversed
+        pidoutput[YAWINDEX] = -pidoutput[YAWINDEX];
+#endif
+
+	lib_fp_constrain(&throttleoutput, 0, FIXEDPOINTONE);
 
         // set the final motor outputs
         // if we aren't armed, or if we desire to have the motors stop, 
