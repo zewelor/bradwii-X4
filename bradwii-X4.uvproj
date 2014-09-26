@@ -559,6 +559,11 @@
               <FileType>1</FileType>
               <FilePath>.\lib-Mini51\hal\lib_soft_3_wire_spi.c</FilePath>
             </File>
+            <File>
+              <FileName>lib_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\lib-Mini51\hal\lib_adc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
