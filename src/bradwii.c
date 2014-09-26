@@ -68,6 +68,9 @@ m
 #include "lib_i2c.h"
 #include "lib_digitalio.h"
 #include "lib_fp.h"
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L
+#include "lib_adc.h"
+#endif
 
 // project file headers
 #include "bradwii.h"
@@ -85,8 +88,6 @@ m
 #include "pilotcontrol.h"
 #include "autotune.h"
 
-#include "drv_pwm.h"   // for testing, remove
-
 globalstruct global;            // global variables
 usersettingsstruct usersettings;        // user editable variables
 
@@ -98,6 +99,14 @@ fixedpointnum integratedangleerror[3];
 // limit pid windup
 #define INTEGRATEDANGLEERRORLIMIT FIXEDPOINTCONSTANT(5000)
 
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L
+// Factor from ADC inpu voltage to battery voltage
+#define FP_BATTERY_VOLTAGE_FACTOR FIXEDPOINTCONSTANT(BATTERY_VOLTAGE_FACTOR)
+
+// If battery voltage gets below this value the LEDs will blink
+#define FP_BATTERY_UNDERVOLTAGE_LIMIT FIXEDPOINTCONSTANT(BATTERY_UNDERVOLTAGE_LIMIT)
+#endif
+
 // timesliver is a very small slice of time (.002 seconds or so).  This small value doesn't take much advantage
 // of the resolution of fixedpointnum, so we shift timesliver an extra TIMESLIVEREXTRASHIFT bits.
 unsigned long timeslivertimer = 0;
@@ -105,6 +114,22 @@ unsigned long timeslivertimer = 0;
 // It all starts here:
 int main(void)
 {
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L
+    // Static to keep it off the stack
+    static bool isbatterylow;         // Set to true while voltage is below limit
+    static bool isadcchannelref;      // Set to true if the next ADC result is reference channel
+    // Current unfiltered battery voltage [V]. Filtered value is in global.batteryvoltage
+    static fixedpointnum batteryvoltage;
+    // Current raw battery voltage.
+    static fixedpointnum batteryvoltageraw;
+    // Current raw bandgap reference voltage.
+    static fixedpointnum bandgapvoltageraw;
+    // Initial bandgap voltage [V]. We measure this once when there is no load on the battery
+    // because the specified tolerance for this is pretty high.
+    static fixedpointnum initialbandgapvoltage;
+#endif
+    static bool isfailsafeactive;     // true while we don't get new data from transmitter
+
     // initialize hardware
 	lib_hal_init();
 
@@ -134,6 +159,9 @@ int main(void)
     initrx();
 #if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
     x4_set_leds(0);
+    // Give the battery voltage lowpass filter a reasonable starting point.
+    global.batteryvoltage = FP_BATTERY_UNDERVOLTAGE_LIMIT;
+    lib_adc_init();  // For battery voltage
 #endif
     initoutputs();
 #if (MULTIWII_CONFIG_SERIAL_PORTS != NOSERIALPORT)
@@ -154,6 +182,25 @@ int main(void)
 
 #if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
     x4_set_leds(1);
+    // Measure internal bandgap voltage now.
+    // Battery is probably full and there is no load,
+    // so we can expect to have a good external ADC reference
+    // voltage now.
+    lib_adc_select_channel(LIB_ADC_CHANREF);
+    initialbandgapvoltage = 0;
+    // Take average of 8 measurements
+    for(int i=0;i<8;i++) {
+        lib_adc_startconv();
+        while(lib_adc_is_busy())
+            ;
+        initialbandgapvoltage += lib_adc_read_volt();
+    }
+    initialbandgapvoltage >>= 3;
+    bandgapvoltageraw = lib_adc_read_raw();
+    // Start first battery voltage measurement
+    isadcchannelref = false;
+    lib_adc_select_channel(LIB_ADC_CHAN5);
+    lib_adc_startconv();
 #endif
 
     // set the default i2c speed to 400 kHz.  If a device needs to slow it down, it can, but it should set it back.
@@ -218,12 +265,15 @@ int main(void)
         // read the receiver
         readrx();
 
+        // Hubsan X4 has its own LED management
+#if (CONTROL_BOARD_TYPE != CONTROL_BOARD_HUBSAN_H107L)
         // turn on the LED when we are stable and the gps has 5 satellites or more
 #if (GPS_TYPE==NO_GPS)
         lib_digitalio_setoutput(LED1_OUTPUT, (global.stable == 0) ? (!LED1_ON) : LED1_ON);
 #else
         lib_digitalio_setoutput(LED1_OUTPUT, (!(global.stable && global.gps_num_satelites >= 5)) == LED1_ON);
 #endif
+#endif // Not Hubsan
 
         // get the angle error.  Angle error is the difference between our current attitude and our desired attitude.
         // It can be set by navigation, or by the pilot, etc.
@@ -385,16 +435,16 @@ int main(void)
         }
         // if we don't hear from the receiver for over a second, try to land safely
         if (lib_timers_gettimermicroseconds(global.failsafetimer) > 1000000L) {
-#if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
-        	// Blink LED 2 while we don't have contact
-        	lib_digitalio_setoutput(LED2_OUTPUT, (lib_timers_gettimermicroseconds(0) % 250000 > 120000) ? (!LED2_ON) : LED2_ON);
-#endif
             throttleoutput = FPFAILSAFEMOTOROUTPUT;
+            isfailsafeactive = true;
 
             // make sure we are level!
             angleerror[ROLLINDEX] = -global.currentestimatedeulerattitude[ROLLINDEX];
             angleerror[PITCHINDEX] = -global.currentestimatedeulerattitude[PITCHINDEX];
         }
+        else
+            isfailsafeactive = false;
+
         // calculate output values.  Output values will range from 0 to 1.0
 
         // calculate pid outputs based on our angleerrors as inputs
@@ -448,8 +498,80 @@ int main(void)
             setmotoroutput(3, 3, throttleoutput + pidoutput[ROLLINDEX] - pidoutput[PITCHINDEX] - pidoutput[YAWINDEX]);
 #endif // QUADX config
         }
-    }
-}
+
+#if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
+        // Measure battery voltage
+        if(!lib_adc_is_busy())
+        {
+            // What did we just measure?
+            // Always alternate between reference channel
+            // and battery voltage
+            if(isadcchannelref) {
+                bandgapvoltageraw = lib_adc_read_raw();
+                isadcchannelref = false;
+                lib_adc_select_channel(LIB_ADC_CHAN5);
+            } else {
+                batteryvoltageraw = lib_adc_read_raw();
+                isadcchannelref = true;
+                lib_adc_select_channel(LIB_ADC_CHANREF);
+
+                // Unfortunately we have to use fixed point division now
+                batteryvoltage = (batteryvoltageraw << 12) / (bandgapvoltageraw >> (FIXEDPOINTSHIFT-12));
+                // Now we have battery voltage relative to bandgap reference voltage.
+                // Multiply by initially measured bandgap voltage to get the voltage at the ADC pin.
+                batteryvoltage = lib_fp_multiply(batteryvoltage, initialbandgapvoltage);
+                // Now take the voltage divider into account to get battery voltage.
+                batteryvoltage = lib_fp_multiply(batteryvoltage, FP_BATTERY_VOLTAGE_FACTOR);
+
+                // Since we measure under load, the voltage is not stable.
+                // Apply 0.5 second lowpass filter.
+                // Use constant FIXEDPOINTONEOVERONEFOURTH instead of FIXEDPOINTONEOVERONEHALF
+                // Because we call this only every other iteration.
+                // (...alternatively multiply global.timesliver by two).
+                lib_fp_lowpassfilter(&(global.batteryvoltage), batteryvoltage, global.timesliver, FIXEDPOINTONEOVERONEFOURTH, TIMESLIVEREXTRASHIFT);
+                // Update state of isbatterylow flag.
+                if(global.batteryvoltage < FP_BATTERY_UNDERVOLTAGE_LIMIT)
+                    isbatterylow = true;
+                else
+                    isbatterylow = false;
+            }
+            // Start next conversion
+            lib_adc_startconv();
+        } // IF ADC result available
+
+        // Decide what LEDs have to show
+        if(isbatterylow) {
+            // Highest priority: Battery voltage
+            // Blink all LEDs slow
+            if(lib_timers_gettimermicroseconds(0) % 500000 > 250000)
+                x4_set_leds(1);
+            else
+                x4_set_leds(0);
+        }
+        else if(isfailsafeactive) {
+            // Lost contact with TX
+            // Blink LEDs fast
+            if(lib_timers_gettimermicroseconds(0) % 250000 > 120000)
+                x4_set_leds(1);
+            else
+                x4_set_leds(0);
+        }
+        else if(!global.armed) {
+            // Not armed
+            // Short blinks
+            if(lib_timers_gettimermicroseconds(0) % 500000 > 420000)
+                x4_set_leds(1);
+            else
+                x4_set_leds(0);
+        }
+        else {
+            // LEDs stay on
+            x4_set_leds(1);
+        }
+
+#endif
+    } // Endless loop
+} // main()
 
 void calculatetimesliver(void)
 {
