@@ -37,7 +37,7 @@ All parameters are hard-coded and gyro/accelerometer calibration is executed at 
 The board does not have a serial port, so a PC configuration software cannot be connected.
 
 How to use:
- * Switch quacdopter on: all LEDs blink alternating
+ * Switch quadcopter on: all LEDs blink alternating
  * Put quadcopter on level and steady surface
  * Switch transmitter on
  * LEDs blink in circular pattern. Don't move the quadcopter during this time because the calibration is ongoing.
@@ -67,5 +67,6 @@ Credits
 
 More information
 ======
-http://www.rcgroups.com/forums/showthread.php?t=2174365
-https://www.mikrocontroller.net/topic/309185 (German)
+
+ * http://www.rcgroups.com/forums/showthread.php?t=2174365
+ * https://www.mikrocontroller.net/topic/309185 (German)
