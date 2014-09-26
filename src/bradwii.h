@@ -85,6 +85,7 @@ typedef struct {
     unsigned char navigationmode;       // See navigation.h
     unsigned char stable;       // Set to 1 when our gravity vector is close to unit length
     uint32_t      failsafetimer;        // Timer for determining if we lose radio contact
+    fixedpointnum batteryvoltage;       // Battery voltage, fixed point in Volt
 } globalstruct;
 
 // put all of the user adjustable settings in one structure to make it easy to read and write to eeprom.
