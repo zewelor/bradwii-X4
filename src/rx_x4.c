@@ -114,7 +114,11 @@ void bind()
     uint8_t chan=0;
 	
     while(1){
-        x4_set_leds( lib_timers_gettimermicroseconds(0) % 500000 > 250000);
+        if( lib_timers_gettimermicroseconds(0) % 500000 > 250000)
+            x4_set_leds(X4_LED_FR | X4_LED_RL);
+        else
+            x4_set_leds(X4_LED_FL | X4_LED_RR);
+
         A7105_Strobe(A7105_STANDBY);
         channel=allowed_ch[chan];
         if(chan==11)

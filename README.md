@@ -25,31 +25,36 @@ The Keil project files are kept as well but they also don't get updated.
 
 Current status
 ======
-The Hubsan H107L port was not finished at the time of creating this fork.
-Now the quadcopter can at fly and shows good flight stability. No problems with oscillations so far.
+The quadcopter can at fly and shows good flight stability. No problems with oscillations so far.
 Trying to lift off slowly it just flips over. In general, it does not like flying close to the ground.
 The original Hubsan firmware had less problems in that area.
 
 Flying feels quite different compared to the original firmware, so it took some time for me to get accustomed to it.
 I did not optimize the control parameters and other parameters at all yet, so there is room for improvement.
 
-There is no parameter storage yet.
+There is no parameter storage yet. 
 All parameters are hard-coded and gyro/accelerometer calibration is executed at every power-on.
-So a level and steady surface is needed. Calibration is executed after binding with transmitter.
-Switch aircraft on first, set it on surface and then switch on the transmitter. This way the calibration is not disturbed by movements.
-After binding with the transmitter the LEDs switch off for a few seconds. This is the calibration phase.
-Unlike the Hubsan firmware there is no check for movements during calibration.
+The board does not have a serial port, so a PC configuration software cannot be connected.
 
-Arming is done by pressing the lower throttle trim button for one second ("LEDs off" for Hubsan firmware). Now you can fly.
-Disarm by pressing the same button again for one second.
+How to use:
+ * Switch quacdopter on: all LEDs blink alternating
+ * Put quadcopter on level and steady surface
+ * Switch transmitter on
+ * LEDs blink in circular pattern. Don't move the quadcopter during this time because the calibration is ongoing.
+ * When calibration is done, all LEDs blink short pulses. Quadcopter is not armed yet and will not respond to throttle.
+ * Press the lower throttle trim button for one second ("LEDs off" for Hubsan firmware)
+ * All LEDs are on and you are ready to fly.
+ * When the LEDs start to blink during flight it's time to land because the battery is nearly empty. With this firmware the LEDs only blink *while* the battery voltage is low,
+so blinking might be temporary at high throttle.
 
-The firmware does not check the battery voltage yet. So there are no LEDs blinking when the battery is nearly empty.
+Disarm by pressing the lower throttle trim button button again for one second.
 
-Development issues:
+
+#### Development issues:
 
 Resetting the board using OpenOCD and the UM232H based SWD adapter does not work. Need to check with scope what's going on.
 
-The OpenOCD Mini51 flash driver did not work for me. I had to modify it.
+The OpenOCD Mini51 flash driver did not work for me, so I modified it.
 Config file and modified source [here](https://gist.github.com/TheLastMutt/d1c1948acaace7444c1c).
 
 Credits

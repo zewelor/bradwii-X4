@@ -221,3 +221,11 @@ void x4_set_leds(unsigned char state);
 // Unit: Volt
 #define BATTERY_UNDERVOLTAGE_LIMIT 3.2
 
+// Parameters for x4_set_leds()
+#define X4_LED_ALL  ((unsigned char)0x0F)
+#define X4_LED_NONE ((unsigned char)0x00)
+#define X4_LED_FL   ((unsigned char)0x01) // Front left
+#define X4_LED_FR   ((unsigned char)0x02) // Front right
+#define X4_LED_RL   ((unsigned char)0x04) // Rear left
+#define X4_LED_RR   ((unsigned char)0x08) // Rear right
+

@@ -158,7 +158,6 @@ int main(void)
     // initialize all other modules
     initrx();
 #if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
-    x4_set_leds(0);
     // Give the battery voltage lowpass filter a reasonable starting point.
     global.batteryvoltage = FP_BATTERY_UNDERVOLTAGE_LIMIT;
     lib_adc_init();  // For battery voltage
@@ -181,7 +180,7 @@ int main(void)
     initimu();
 
 #if (CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L)
-    x4_set_leds(1);
+    x4_set_leds(X4_LED_ALL);
     // Measure internal bandgap voltage now.
     // Battery is probably full and there is no load,
     // so we can expect to have a good external ADC reference
@@ -544,29 +543,29 @@ int main(void)
             // Highest priority: Battery voltage
             // Blink all LEDs slow
             if(lib_timers_gettimermicroseconds(0) % 500000 > 250000)
-                x4_set_leds(1);
+                x4_set_leds(X4_LED_ALL);
             else
-                x4_set_leds(0);
+                x4_set_leds(X4_LED_NONE);
         }
         else if(isfailsafeactive) {
             // Lost contact with TX
-            // Blink LEDs fast
+            // Blink LEDs fast alternating
             if(lib_timers_gettimermicroseconds(0) % 250000 > 120000)
-                x4_set_leds(1);
+                x4_set_leds(X4_LED_FR | X4_LED_RL);
             else
-                x4_set_leds(0);
+                x4_set_leds(X4_LED_FL | X4_LED_RR);
         }
         else if(!global.armed) {
             // Not armed
             // Short blinks
-            if(lib_timers_gettimermicroseconds(0) % 500000 > 420000)
-                x4_set_leds(1);
+            if(lib_timers_gettimermicroseconds(0) % 500000 > 450000)
+                x4_set_leds(X4_LED_ALL);
             else
-                x4_set_leds(0);
+                x4_set_leds(X4_LED_NONE);
         }
         else {
             // LEDs stay on
-            x4_set_leds(1);
+            x4_set_leds(X4_LED_ALL);
         }
 
 #endif

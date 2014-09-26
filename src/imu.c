@@ -69,6 +69,10 @@ fixedpointnum lastbarorawaltitude;      // remember our last reading so we can c
 // assumes the aircraft is sitting level and still.
 void calibrategyroandaccelerometer(void)
 {
+#ifdef X4_BUILD
+    uint8_t ledstatus;
+#endif
+
     for (int x = 0; x < 3; ++x) {
         usersettings.gyrocalibration[x] = 0;
         usersettings.acccalibration[x] = 0;
@@ -85,7 +89,24 @@ void calibrategyroandaccelerometer(void)
 
         calculatetimesliver();
         totaltime += global.timesliver;
+#ifdef X4_BUILD
+        ledstatus = (uint8_t)((totaltime >> (FIXEDPOINTSHIFT+TIMESLIVEREXTRASHIFT-2))& 0x3);
+        switch(ledstatus) {
+        case 0:
+            x4_set_leds(X4_LED_FL);
+            break;
+        case 1:
+            x4_set_leds(X4_LED_FR);
+            break;
+        case 2:
+            x4_set_leds(X4_LED_RR);
+            break;
+        case 3:
+            x4_set_leds(X4_LED_RL);
+            break;
+        }
 
+#endif
         for (int x = 0; x < 3; ++x) {
             lib_fp_lowpassfilter(&usersettings.gyrocalibration[x], -global.gyrorate[x], global.timesliver, FIXEDPOINTONEOVERONE, TIMESLIVEREXTRASHIFT);
             lib_fp_lowpassfilter(&usersettings.acccalibration[x], -global.acc_g_vector[x], global.timesliver, FIXEDPOINTONEOVERONE, TIMESLIVEREXTRASHIFT);
