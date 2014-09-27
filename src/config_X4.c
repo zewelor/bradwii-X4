@@ -30,19 +30,19 @@ void x4_set_usersettings()
     usersettings.maxpitchandrollrate = 400L << FIXEDPOINTSHIFT; // degrees per second
     
     // pitch PIDs
-    usersettings.pid_pgain[PITCHINDEX] = 15L << 3;   // 1.5 on configurator
-    usersettings.pid_igain[PITCHINDEX] = 8L; // .008 on configurator
-    usersettings.pid_dgain[PITCHINDEX] = 8L << 2;    // 8 on configurator
+    usersettings.pid_pgain[PITCHINDEX] = 35L << 3;
+    usersettings.pid_igain[PITCHINDEX] = 4L;
+    usersettings.pid_dgain[PITCHINDEX] = 22L << 2;
 
     // roll PIDs
-    usersettings.pid_pgain[ROLLINDEX] = 15L << 3;   // 1.5 on configurator
-    usersettings.pid_igain[ROLLINDEX] = 8L; // .008 on configurator
-    usersettings.pid_dgain[ROLLINDEX] = 8L << 2;    // 8 on configurator
+    usersettings.pid_pgain[ROLLINDEX] = 35L << 3;
+    usersettings.pid_igain[ROLLINDEX] = 4L;
+    usersettings.pid_dgain[ROLLINDEX] = 22L << 2;
 
     // yaw PIDs
-    usersettings.pid_pgain[YAWINDEX] = 30L << 3;   // 3.0 on configurator
-    usersettings.pid_igain[YAWINDEX] = 8L; // .008 on configurator
-    usersettings.pid_dgain[YAWINDEX] = 8L << 2;    // 8 on configurator
+    usersettings.pid_pgain[YAWINDEX] = 50L << 3;
+    usersettings.pid_igain[YAWINDEX] = 8L;
+    usersettings.pid_dgain[YAWINDEX] = 16L << 2;
 
     for (int x = 0; x < NUMPOSSIBLECHECKBOXES; ++x) {
         usersettings.checkboxconfiguration[x] = 0;

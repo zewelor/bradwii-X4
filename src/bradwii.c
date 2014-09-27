@@ -97,10 +97,10 @@ fixedpointnum integratedaltitudeerror;  // for pid control
 fixedpointnum integratedangleerror[3];
 
 // limit pid windup
-#define INTEGRATEDANGLEERRORLIMIT FIXEDPOINTCONSTANT(5000)
+#define INTEGRATEDANGLEERRORLIMIT FIXEDPOINTCONSTANT(1000)
 
 #if CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L
-// Factor from ADC inpu voltage to battery voltage
+// Factor from ADC input voltage to battery voltage
 #define FP_BATTERY_VOLTAGE_FACTOR FIXEDPOINTCONSTANT(BATTERY_VOLTAGE_FACTOR)
 
 // If battery voltage gets below this value the LEDs will blink
