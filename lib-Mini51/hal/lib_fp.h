@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // values, but the compliler likes shifting things by 16 bits (words at a time) so things run
 // faster with a FIXEDPOINTSHIFT of 16.
 
-// Therefore, the range of a fixedpointnum is -32768.0 to 32786.0 with an accuracy of 0.000015
+// Therefore, the range of a fixedpointnum is -32768.0 to 32767.0 with an accuracy of 0.000015
 // There is no overflow or underflow protection, so it's up to the programmer to watch out.
 
 #include "hal.h"
