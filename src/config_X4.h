@@ -151,7 +151,7 @@ void x4_set_leds(unsigned char state);
 #define ESC_CALIB_HIGH MAX_MOTOR_OUTPUT
 
 // un-comment if you don't want to include autotune code
-//#define NO_AUTOTUNE
+#define NO_AUTOTUNE
 
 // To adjust how agressive the tuning is, adjust the AUTOTUNEMAXOSCILLATION value.  A larger
 // value will result in more agressive tuning. A lower value will result in softer tuning.

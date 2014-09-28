@@ -88,6 +88,13 @@ m
 #include "pilotcontrol.h"
 #include "autotune.h"
 
+// Data type for stick movement detection to execute accelerometer calibration
+typedef enum stickstate_tag {
+    STICK_STATE_START,   // No stick movement detected yet
+    STICK_STATE_LOW,     // Stick was low recently
+    STICK_STATE_HIGH     // Stick was high recently
+} stickstate_t;
+
 globalstruct global;            // global variables
 usersettingsstruct usersettings;        // user editable variables
 
@@ -107,9 +114,18 @@ fixedpointnum integratedangleerror[3];
 #define FP_BATTERY_UNDERVOLTAGE_LIMIT FIXEDPOINTCONSTANT(BATTERY_UNDERVOLTAGE_LIMIT)
 #endif
 
+// Stick is moved out of middle position towards low
+#define FP_RXMOVELOW FIXEDPOINTCONSTANT(-0.2)
+// Stick is moved out of middle position towards high
+#define FP_RXMOVEHIGH FIXEDPOINTCONSTANT(0.2)
+
 // timesliver is a very small slice of time (.002 seconds or so).  This small value doesn't take much advantage
 // of the resolution of fixedpointnum, so we shift timesliver an extra TIMESLIVEREXTRASHIFT bits.
 unsigned long timeslivertimer = 0;
+
+// Local functions
+static void detectstickcommand(void);
+
 
 // It all starts here:
 int main(void)
@@ -142,16 +158,28 @@ int main(void)
     // set our LED as a digital output
     lib_digitalio_initpin(LED1_OUTPUT, DIGITALOUTPUT);
 
-#if CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L
-    // extras init for Hubsan X4
-    x4_init_leds();
-    x4_set_usersettings(); // hardcoded user settings, no GUI or eeprom
-#endif
-	
     //initialize the libraries that require initialization
     lib_timers_init();
     lib_i2c_init();
 
+#if CONTROL_BOARD_TYPE == CONTROL_BOARD_HUBSAN_H107L
+    // extras init for Hubsan X4
+    x4_init_leds();
+    if(!global.usersettingsfromeeprom) {
+        // If nothing found in EEPROM (= data flash on Mini51)
+        // use default X4 settings.
+        x4_set_usersettings();
+        // Indicate that default settings are used and accelerometer
+        // calibration will be executed (4 long LED blinks)
+        for(uint8_t i=0;i<4;i++) {
+            x4_set_leds(X4_LED_ALL);
+            lib_timers_delaymilliseconds(500);
+            x4_set_leds(X4_LED_NONE);
+            lib_timers_delaymilliseconds(500);
+        }
+    }
+#endif
+	
     // pause a moment before initializing everything. To make sure everything is powered up
     lib_timers_delaymilliseconds(100); 
 		
@@ -236,7 +264,13 @@ int main(void)
                 }
             } else if (!(global.activecheckboxitems & CHECKBOXMASKARM))
                 global.armed = 0;
+        } // if throttle low
+
+        if(!global.armed) {
+            // Not armed: check if there is a stick command to execute.
+            detectstickcommand();
         }
+
 #if (GPS_TYPE!=NO_GPS)
         // turn on or off navigation when appropriate
         if (global.navigationmode == NAVIGATIONMODEOFF) {
@@ -635,3 +669,64 @@ void defaultusersettings(void)
     usersettings.fhsize = 0;
 #endif
 }
+
+// Executes command based on stick movements.
+// Call this only when not armed.
+// Currently implemented: accelerometer calibration
+static void detectstickcommand(void) {
+    // Timeout for stick movements for accelerometer calibration
+    static uint32_t stickcommandtimer;
+    // Keeps track of roll stick movements while not armed to execute accelerometer calibration.
+    static stickstate_t lastrollstickstate = STICK_STATE_START;
+    // Counts roll stick movements
+    static uint8_t rollmovecounter;
+
+    // Accelerometer calibration (3x back and forth movement of roll stick while
+    // throttle is in lowest position)
+    if (global.rxvalues[THROTTLEINDEX] < FPSTICKLOW) {
+        if (global.rxvalues[ROLLINDEX] < FP_RXMOVELOW) {
+            // Stick is now low. What has happened before?
+            if(lastrollstickstate == STICK_STATE_START) {
+                // We just come from start position, so this is our first movement
+                rollmovecounter=1;
+                lastrollstickstate = STICK_STATE_LOW;
+                // Detected stick movement, so restart timeout.
+                stickcommandtimer = lib_timers_starttimer();
+            } else if (lastrollstickstate == STICK_STATE_HIGH) {
+                // Stick had been high recently, so increment counter
+                rollmovecounter++;
+                lastrollstickstate = STICK_STATE_LOW;
+                // Detected stick movement, so restart timeout.
+                stickcommandtimer = lib_timers_starttimer();
+            } // else: nothing happened, nothing to do
+        } else if (global.rxvalues[ROLLINDEX] > FP_RXMOVEHIGH) {
+            // And now the same in opposite direction...
+            if(lastrollstickstate == STICK_STATE_START) {
+                // We just come from start position
+                rollmovecounter=1;
+                lastrollstickstate = STICK_STATE_HIGH;
+                // Detected stick movement, so restart timeout.
+                stickcommandtimer = lib_timers_starttimer();
+            } else if (lastrollstickstate == STICK_STATE_LOW) {
+                // Stick had been low recently, so increment counter
+                rollmovecounter++;
+                lastrollstickstate = STICK_STATE_HIGH;
+                // Detected stick movement, so restart timeout.
+                stickcommandtimer = lib_timers_starttimer();
+            } // else: nothing happened, nothing to do
+        }
+
+        if(lib_timers_gettimermicroseconds(stickcommandtimer) > 1000000L) {
+            // Timeout: last detected stick movement was more than 1 second ago.
+            lastrollstickstate = STICK_STATE_START;
+        }
+
+        if(rollmovecounter == 6) {
+            // Now we had enough movements. Execute calibration.
+            calibrategyroandaccelerometer(true);
+            // Save in EEPROM
+            writeusersettingstoeeprom();
+            lastrollstickstate = STICK_STATE_START;
+        }
+    } // if throttle low
+} // checkforstickcommand()
