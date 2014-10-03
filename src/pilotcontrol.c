@@ -32,15 +32,18 @@ extern usersettingsstruct usersettings;
 // When the yaw stick is centered, allow compass hold.  This defines what centered is:
 #define YAWCOMPASSRXDEADBAND FIXEDPOINTCONSTANT(.125)   // 1/8 of the range
 
-fixedpointnum filteredyawgyrorate = 0;
-fixedpointnum desiredcompassheading;
-fixedpointnum highyawrate;
-fixedpointnum highpitchandrollrate;
+static fixedpointnum filteredyawgyrorate = 0;
+static fixedpointnum desiredcompassheading;
+static fixedpointnum highyawrate;
+static fixedpointnum highpitchandrollrate;
+static fixedpointnum accumulatedyawerror = 0;
 
 void resetpilotcontrol(void)
 {                               // called when switching from navigation control to pilot control or when idling on the ground.
     // keeps us from accumulating yaw error that we can't correct.
     desiredcompassheading = global.currentestimatedeulerattitude[YAWINDEX];
+    // Same for yaw hold mode
+    accumulatedyawerror = 0;
 
     // calculate our max rotation rates based on usersettings
     highyawrate = lib_fp_multiply(usersettings.maxyawrate, FP_HIGH_RATES_MULTILIER);
@@ -102,8 +105,27 @@ void getangleerrorfrompilotinput(fixedpointnum * angleerror)
     // put a low pass filter on the yaw gyro.  If we don't do this, things can get jittery.
     lib_fp_lowpassfilter(&filteredyawgyrorate, global.gyrorate[YAWINDEX], global.timesliver >> (TIMESLIVEREXTRASHIFT - 3), FIXEDPOINTONEOVERONESIXTYITH, 3);
 
-    // Calculate our yaw angle error
-    angleerror[YAWINDEX] = lib_fp_multiply(lib_fp_multiply(global.rxvalues[YAWINDEX], maxyawrate) - filteredyawgyrorate, global.timesliver);
+    if(global.activecheckboxitems & CHECKBOXMASKYAWHOLD) {
+        // Yaw hold: control yaw angle instead of yaw rate by accumulating the yaw errors.
+        // This is similar to compass mode, but no hardware compass needed.
+        if(!(global.previousactivecheckboxitems & CHECKBOXMASKYAWHOLD)) {
+            // This mode was just switched on. Use current position as reference by setting error to zero.
+            accumulatedyawerror = 0;
+        }
+        // Accumulate yaw angle error
+        accumulatedyawerror += lib_fp_multiply(lib_fp_multiply(global.rxvalues[YAWINDEX], maxyawrate) - filteredyawgyrorate, global.timesliver) >> TIMESLIVEREXTRASHIFT;
+        // Make sure it does not get too high
+        lib_fp_constrain180(&accumulatedyawerror);
+        angleerror[YAWINDEX] = accumulatedyawerror;
+    } else {
+        // Normal mode: control yaw rate
+        // Calculate yaw angle error since last update based on desired and actual yaw rate.
+        // TIMESLIVEREXTRASHIFT is not used here, so this value is 256 times higher than expected.
+        // This is OK because timesliver is very small, making the angle error during this time
+        // also very small. Using the amplified result the same yaw PID control parameters can be used
+        // for all modes (normal, compass and yaw hold).
+        angleerror[YAWINDEX] = lib_fp_multiply(lib_fp_multiply(global.rxvalues[YAWINDEX], maxyawrate) - filteredyawgyrorate, global.timesliver);
+    }
 
     // handle compass control
     if (global.activecheckboxitems & CHECKBOXMASKCOMPASS) {

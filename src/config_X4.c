@@ -40,9 +40,9 @@ void x4_set_usersettings()
     usersettings.pid_dgain[ROLLINDEX] = 22L << 2;
 
     // yaw PIDs
-    usersettings.pid_pgain[YAWINDEX] = 50L << 3;
-    usersettings.pid_igain[YAWINDEX] = 8L;
-    usersettings.pid_dgain[YAWINDEX] = 16L << 2;
+    usersettings.pid_pgain[YAWINDEX] = 100L << 3;
+    usersettings.pid_igain[YAWINDEX] = 0L;
+    usersettings.pid_dgain[YAWINDEX] = 22L << 2;
 
     for (int x = 0; x < NUMPOSSIBLECHECKBOXES; ++x) {
         usersettings.checkboxconfiguration[x] = 0;
@@ -50,6 +50,7 @@ void x4_set_usersettings()
     
     // flight modes, see checkboxes.h for a complete list
     usersettings.checkboxconfiguration[CHECKBOXARM] = CHECKBOXMASKAUX1LOW;
+    usersettings.checkboxconfiguration[CHECKBOXYAWHOLD] = CHECKBOXMASKAUX2LOW;
     
     // set fullacro flight mode (gyro only) for  AUX1 high (LEDs on/off channel on stock TX)
     // default for H107L, H107C & H107D stock TXs
