@@ -15,13 +15,23 @@ The control parameters habe been optimized in a way that flying feels similar to
 It is possible to lift off very slowly and fly close to the ground.
 The control parameters have not been tested in acro or semi-acro mode.
 
-There is no parameter storage yet. 
-All parameters are hard-coded and gyro/accelerometer calibration is executed at every power-on.
-The board does not have a serial port, so a PC configuration software cannot be connected.
+Accelerometer calibration can be separated from gyro calibration, like the original firmware does. After executing the manual accelerometer calibration,
+the parameters are stored in data flash. At subsequent power-on only the gyro calibration is executed. This way there is no need to find a level surface
+for every power-on.
+
+Testing a new flight mode: "yaw hold". In this mode the yaw controller controls the yaw angle instead of the yaw rate.
+If the quadcopter gets rotated away from its desired heading (due to wind or high throttle or whatever), it will try to rotate back to the desired heading.
+This is similar to compass mode, but a compass is not needed. This mode can be activated using the checkboxes like all the other flight modes.
+It is currently activated using AUX2 ("flip"/"no flip" channel of X4).
+
+The X4 board does not have a serial port, so a PC configuration software cannot be connected.
 
 How to use:
- * Switch quadcopter on: all LEDs blink alternating
- * Put quadcopter on level and steady surface
+ * Switch quadcopter on
+ * (If all LEDs slowly blink 4 times, no accelerometer calibration was found in data flash. Accelerometer will be calibrated after binding with transmitter,
+so a level surface is needed. Use manual accelerometer calibration to remedy this)
+ * All LEDs blink alternating
+ * Put quadcopter on steady surface
  * Switch transmitter on
  * LEDs blink in circular pattern. Don't move the quadcopter during this time because the calibration is ongoing.
  * When calibration is done, all LEDs blink short pulses. Quadcopter is not armed yet and will not respond to throttle.
@@ -30,7 +40,14 @@ How to use:
  * When the LEDs start to blink during flight it's time to land because the battery is nearly empty.
 With this firmware the LEDs only blink *while* the battery voltage is low, so blinking might be temporary at high throttle.
 
-Disarm by pressing the lower throttle trim button button again for one second.
+Disarm by pressing the lower throttle trim button again for one second.
+
+Manual accelerometer calibration:
+ * Quadcopter must be on level surface
+ * Quadcopter must be in "not armed" state
+ * Throttle stick at minimum
+ * Move roll stick 3 times left and right
+ * LEDs blink in circular pattern to indicate calibration process. When finished, results are stored in data flash.
 
 #### Used development environment
  * Kubuntu 14.04 amd64
@@ -41,6 +58,9 @@ Disarm by pressing the lower throttle trim button button again for one second.
  * OpenOCD, built from latest source. Release 0.8.0 does not include SWD driver for FTDI yet. http://openocd.sourceforge.net/
 
 #### Development issues:
+
+When burning a firmware with new PID control parameters, checkboxconfig or anything else from the usersettings struct make sure to erase the data flash.
+Otherwise the firmware will continue to use the old data.
 
 Resetting the board using OpenOCD and the UM232H based SWD adapter does not work. Need to check with scope what's going on.
 
