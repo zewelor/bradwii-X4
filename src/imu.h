@@ -20,4 +20,4 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 void initimu(void);
 void imucalculateestimatedattitude(void);
-void calibrategyroandaccelerometer(void);
+void calibrategyroandaccelerometer(bool both);

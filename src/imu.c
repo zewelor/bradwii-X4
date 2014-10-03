@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // library headers
+#include <stdbool.h>
 #include "lib_timers.h"
 #include "lib_fp.h"
 
@@ -67,37 +68,65 @@ fixedpointnum lastbarorawaltitude;      // remember our last reading so we can c
 
 // read the acc and gyro a bunch of times and get an average of how far off they are.
 // assumes the aircraft is sitting level and still.
-void calibrategyroandaccelerometer(void)
+// If both==false, only gyro is calibrated and accelerometer calibration not touched.
+void calibrategyroandaccelerometer(bool both)
 {
+#ifdef X4_BUILD
+    uint8_t ledstatus;
+#endif
+
     for (int x = 0; x < 3; ++x) {
         usersettings.gyrocalibration[x] = 0;
-        usersettings.acccalibration[x] = 0;
+        if(both)
+            usersettings.acccalibration[x] = 0;
     }
 
     fixedpointnum totaltime = 0;
 
     // calibrate the gyro and acc
-    while (totaltime < 4L << (FIXEDPOINTSHIFT + TIMESLIVEREXTRASHIFT))  // 4 seconds
+    while (totaltime < (FIXEDPOINTCONSTANT(4) << TIMESLIVEREXTRASHIFT)) // 4 seconds
     {
         readgyro();
-        readacc();
-        global.acc_g_vector[ZINDEX] -= FIXEDPOINTONE;   // vertical vector should be at 1 G
+        if(both) {
+            readacc();
+            global.acc_g_vector[ZINDEX] -= FIXEDPOINTONE; // vertical vector should be at 1g
+        }
 
         calculatetimesliver();
         totaltime += global.timesliver;
-
+#ifdef X4_BUILD
+        // Rotating LED pattern
+        ledstatus = (uint8_t)((totaltime >> (FIXEDPOINTSHIFT+TIMESLIVEREXTRASHIFT-3))& 0x3);
+        switch(ledstatus) {
+        case 0:
+            x4_set_leds(X4_LED_FL);
+            break;
+        case 1:
+            x4_set_leds(X4_LED_FR);
+            break;
+        case 2:
+            x4_set_leds(X4_LED_RR);
+            break;
+        case 3:
+            x4_set_leds(X4_LED_RL);
+            break;
+        }
+#endif
         for (int x = 0; x < 3; ++x) {
             lib_fp_lowpassfilter(&usersettings.gyrocalibration[x], -global.gyrorate[x], global.timesliver, FIXEDPOINTONEOVERONE, TIMESLIVEREXTRASHIFT);
-            lib_fp_lowpassfilter(&usersettings.acccalibration[x], -global.acc_g_vector[x], global.timesliver, FIXEDPOINTONEOVERONE, TIMESLIVEREXTRASHIFT);
+            if(both)
+                lib_fp_lowpassfilter(&usersettings.acccalibration[x], -global.acc_g_vector[x], global.timesliver, FIXEDPOINTONEOVERONE, TIMESLIVEREXTRASHIFT);
         }
     }
 }
 
 void initimu(void)
 {
-    // calibrate every time if we dont load any data from eeprom
+    // calibrate both sensors if we didn't load any data from eeprom
     if (global.usersettingsfromeeprom == 0)
-        calibrategyroandaccelerometer();
+        calibrategyroandaccelerometer(true);
+    else // only gyro
+        calibrategyroandaccelerometer(false);
 
     global.estimateddownvector[XINDEX] = 0;
     global.estimateddownvector[YINDEX] = 0;

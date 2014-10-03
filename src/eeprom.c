@@ -25,7 +25,7 @@ extern globalstruct global;
 
 void writeusersettingstoeeprom(void)
 {
-	/*
+#ifdef X4_BUILD  // this was commented out for the other models
     uint16_t magicnumber = MAGICNUMBER;
     int16_t size = sizeof(usersettingsstruct);
     uint16_t index = 0;
@@ -35,12 +35,12 @@ void writeusersettingstoeeprom(void)
     index += eeprom_write_block((const void *)&size, index, sizeof(size));
     index += eeprom_write_block((const void *)&usersettings, index, size);
     eeprom_commit();
-		*/
+#endif
 }
 
 void readusersettingsfromeeprom(void)
 {
-	/*
+#ifdef X4_BUILD  // this was commented out for the other models
     uint16_t magicnumber = 0;
     int16_t size = 0;
     uint16_t index = 0;
@@ -56,5 +56,5 @@ void readusersettingsfromeeprom(void)
     eeprom_read_block((void *) &usersettings, index, size);
 
     global.usersettingsfromeeprom = 1;  // set a flag so the rest of the program know it's working with calibtated settings
-	*/
+#endif
 }

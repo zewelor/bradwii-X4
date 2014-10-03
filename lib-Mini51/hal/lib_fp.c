@@ -26,7 +26,7 @@ void lib_fp_constrain(fixedpointnum *lf, fixedpointnum low, fixedpointnum high)
         *lf = high;
 }
 
-// returns the equivilent angle within the range -180 and 180 degrees
+// returns the equivalent angle within the range -180 and 180 degrees
 void lib_fp_constrain180(fixedpointnum *lf)
 {
     while (*lf < -FIXEDPOINT180)
@@ -85,9 +85,9 @@ fixedpointnum lib_fp_multiply(fixedpointnum x, fixedpointnum y)
 }
 
 void lib_fp_lowpassfilter(fixedpointnum *variable, fixedpointnum newvalue, fixedpointnum timesliver, fixedpointnum oneoverperiod, int timesliverextrashift)
-{                               // updates a low pass filter variable.  It uses timesliver.  oneoverperiod is one over the time period 
+{   // updates a low pass filter variable.  It uses timesliver.  oneoverperiod is one over the time period
     // over which the filter is averaged.  We use oneoverperiod to avoid having to use division.
-    // this does the equivilent of:
+    // this does the equivalent of:
     //    float fraction=timesliver/period;
     //    variable=fraction*newvalue+(1-fraction)*variable;
     // except it does it using fixed point arithmatic
@@ -112,7 +112,7 @@ fixedpointnum lib_fp_abs(fixedpointnum fp)
 }
 
 // we may be able to make these unsigned ints and save space
-fixedpointnum biganglesinelookup[] = {  // every 8 degrees 
+static const fixedpointnum biganglesinelookup[] = {  // every 8 degrees
     0,                          // sine(0)
     9121,                       // sine(8)
     18064,                      // sine(16)
@@ -127,7 +127,7 @@ fixedpointnum biganglesinelookup[] = {  // every 8 degrees
     65496,
 };
 
-fixedpointnum biganglecosinelookup[] = {        // every 8 degrees 
+static const fixedpointnum biganglecosinelookup[] = {        // every 8 degrees
     65536,                      // cosine(0)
     64898,                      // cosine(8)
     62997,                      // cosine(16)
@@ -143,7 +143,7 @@ fixedpointnum biganglecosinelookup[] = {        // every 8 degrees
 };
 
 fixedpointnum lib_fp_sine(fixedpointnum angle)
-{                               // returns sine of angle where angle is in degrees
+{   // returns sine of angle where angle is in degrees
     // manipulate so that we only have to work in a range from 0 to 90 degrees
     char negate = 0;
 
@@ -177,7 +177,7 @@ fixedpointnum lib_fp_cosine(fixedpointnum angle)
     return (lib_fp_sine(angle + FIXEDPOINT90));
 }
 
-fixedpointnum atanlist[] = {
+static const fixedpointnum atanlist[] = {
     2949120L,                   // atan(2^-i), in fixedpointnum
     1740967L,
     919879L,
@@ -197,7 +197,7 @@ fixedpointnum atanlist[] = {
 // http://www.coranac.com/documents/arctangent/
 
 fixedpointnum lib_fp_atan2(fixedpointnum y, fixedpointnum x)
-{                               // returns angle from -180 to 180 degrees
+{   // returns angle from -180 to 180 degrees
     if (y == 0)
         return (x >= 0 ? 0 : FIXEDPOINT180);
 
@@ -250,7 +250,7 @@ fixedpointnum lib_fp_sqrt(fixedpointnum x)
 }
 
 int32_t lib_fp_stringtolong(char *string)
-{                               // converts a string to an integer.  Stops at any character other than 0-9 or '-'.  Stops at decimal places too.
+{   // converts a string to an integer.  Stops at any character other than 0-9 or '-'.  Stops at decimal places too.
     long value = 0;
     char negative = 0;
     if (*string == '-') {
@@ -302,7 +302,7 @@ fixedpointnum lib_fp_stringtofixedpointnum(char *string)
         return (value);
 }
 
-fixedpointnum invsqrtstartingpoint[12] = {      // =(1/((x+4.5)/16)^0.5)
+static const fixedpointnum invsqrtstartingpoint[12] = {      // =(1/((x+4.5)/16)^0.5)
     // add 4 because range of xysquared starts at .25.
     // add .5 to get a value in the middle of the range.
     // 16 is the number of steps we break down into (hence the shift by 4 when calling)

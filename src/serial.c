@@ -168,7 +168,7 @@ void evaluatecommand(char portnumber, unsigned char *data)
         sendgoodheader(portnumber, 0);
     } else if (command == MSP_ACC_CALIBRATION) {        // send attitude data
         if (!global.armed)
-            calibrategyroandaccelerometer();
+            calibrategyroandaccelerometer(true);
         sendgoodheader(portnumber, 0);
     }
 

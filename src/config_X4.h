@@ -151,7 +151,7 @@ void x4_set_leds(unsigned char state);
 #define ESC_CALIB_HIGH MAX_MOTOR_OUTPUT
 
 // un-comment if you don't want to include autotune code
-//#define NO_AUTOTUNE
+#define NO_AUTOTUNE
 
 // To adjust how agressive the tuning is, adjust the AUTOTUNEMAXOSCILLATION value.  A larger
 // value will result in more agressive tuning. A lower value will result in softer tuning.
@@ -220,4 +220,12 @@ void x4_set_leds(unsigned char state);
 // set this value higher.
 // Unit: Volt
 #define BATTERY_UNDERVOLTAGE_LIMIT 3.2
+
+// Parameters for x4_set_leds()
+#define X4_LED_ALL  ((unsigned char)0x0F)
+#define X4_LED_NONE ((unsigned char)0x00)
+#define X4_LED_FL   ((unsigned char)0x01) // Front left
+#define X4_LED_FR   ((unsigned char)0x02) // Front right
+#define X4_LED_RL   ((unsigned char)0x04) // Rear left
+#define X4_LED_RR   ((unsigned char)0x08) // Rear right
 

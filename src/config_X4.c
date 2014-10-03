@@ -30,34 +30,36 @@ void x4_set_usersettings()
     usersettings.maxpitchandrollrate = 400L << FIXEDPOINTSHIFT; // degrees per second
     
     // pitch PIDs
-    usersettings.pid_pgain[PITCHINDEX] = 15L << 3;   // 1.5 on configurator
-    usersettings.pid_igain[PITCHINDEX] = 8L; // .008 on configurator
-    usersettings.pid_dgain[PITCHINDEX] = 8L << 2;    // 8 on configurator
+    usersettings.pid_pgain[PITCHINDEX] = 35L << 3;
+    usersettings.pid_igain[PITCHINDEX] = 4L;
+    usersettings.pid_dgain[PITCHINDEX] = 22L << 2;
 
     // roll PIDs
-    usersettings.pid_pgain[ROLLINDEX] = 15L << 3;   // 1.5 on configurator
-    usersettings.pid_igain[ROLLINDEX] = 8L; // .008 on configurator
-    usersettings.pid_dgain[ROLLINDEX] = 8L << 2;    // 8 on configurator
+    usersettings.pid_pgain[ROLLINDEX] = 35L << 3;
+    usersettings.pid_igain[ROLLINDEX] = 4L;
+    usersettings.pid_dgain[ROLLINDEX] = 22L << 2;
 
     // yaw PIDs
-    usersettings.pid_pgain[YAWINDEX] = 30L << 3;   // 3.0 on configurator
-    usersettings.pid_igain[YAWINDEX] = 8L; // .008 on configurator
-    usersettings.pid_dgain[YAWINDEX] = 8L << 2;    // 8 on configurator
+    usersettings.pid_pgain[YAWINDEX] = 100L << 3;
+    usersettings.pid_igain[YAWINDEX] = 0L;
+    usersettings.pid_dgain[YAWINDEX] = 22L << 2;
 
     for (int x = 0; x < NUMPOSSIBLECHECKBOXES; ++x) {
         usersettings.checkboxconfiguration[x] = 0;
     }
     
     // flight modes, see checkboxes.h for a complete list
+    usersettings.checkboxconfiguration[CHECKBOXARM] = CHECKBOXMASKAUX1LOW;
+    usersettings.checkboxconfiguration[CHECKBOXYAWHOLD] = CHECKBOXMASKAUX2LOW;
     
     // set fullacro flight mode (gyro only) for  AUX1 high (LEDs on/off channel on stock TX)
     // default for H107L, H107C & H107D stock TXs
-    usersettings.checkboxconfiguration[CHECKBOXFULLACRO] = CHECKBOXMASKAUX1HIGH; // rate mode (gyro only)
+    //usersettings.checkboxconfiguration[CHECKBOXFULLACRO] = CHECKBOXMASKAUX1HIGH; // rate mode (gyro only)
     //usersettings.checkboxconfiguration[CHECKBOXHIGHRATES] = CHECKBOXMASKAUX1HIGH; // uncommentr for high rates
     
     // set semiacro flight mode for AUX1 low
     // default for H107 stock TX 
-    usersettings.checkboxconfiguration[CHECKBOXSEMIACRO] = CHECKBOXMASKAUX1LOW;
+    //usersettings.checkboxconfiguration[CHECKBOXSEMIACRO] = CHECKBOXMASKAUX1LOW;
     //usersettings.checkboxconfiguration[CHECKBOXHIGHANGLE] = CHECKBOXMASKAUX1LOW; // uncomment for high angle
 }
 
@@ -71,9 +73,9 @@ void x4_init_leds()
 
 void x4_set_leds(unsigned char state)
 {
-    lib_digitalio_setoutput( LED1_OUTPUT , state ? LED1_ON : !LED1_ON);
-	lib_digitalio_setoutput( LED2_OUTPUT , state ? LED2_ON : !LED2_ON);
-	lib_digitalio_setoutput( LED5_OUTPUT , state ? LED5_ON : !LED5_ON);
- 	lib_digitalio_setoutput( LED6_OUTPUT , state ? LED6_ON : !LED6_ON);
+    lib_digitalio_setoutput( LED1_OUTPUT , (state & 0x01) ? LED1_ON : !LED1_ON);
+	lib_digitalio_setoutput( LED2_OUTPUT , (state & 0x02) ? LED2_ON : !LED2_ON);
+	lib_digitalio_setoutput( LED5_OUTPUT , (state & 0x04) ? LED5_ON : !LED5_ON);
+ 	lib_digitalio_setoutput( LED6_OUTPUT , (state & 0x08) ? LED6_ON : !LED6_ON);
 }
 
