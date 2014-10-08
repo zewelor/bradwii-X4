@@ -270,14 +270,25 @@ void FMC_SetVectorPageAddr(uint32_t u32PageAddr)
   * @brief    Writes a word data to specified flash addrss.
   * @param    u32Addr: destination address
   * @param    u32Data: word data to be written
+  * @retval   0:  Success
+  * @retval   -1: Failed
   */
-void FMC_Write(uint32_t u32Addr, uint32_t u32Data)
+int32_t FMC_Write(uint32_t u32Addr, uint32_t u32Data)
 {
     FMC->ISPCMD = FMC_ISPCMD_PROGRAM;
     FMC->ISPADR = u32Addr;
     FMC->ISPDAT = u32Data;
     FMC->ISPTRG = FMC_ISPTRG_ISPGO_Msk; 
-    while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk) ;
+
+    while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk)
+        ;
+
+    if (FMC->ISPCON & FMC_ISPCON_ISPFF_Msk)
+    {
+        FMC->ISPCON = FMC_ISPCON_ISPFF_Msk;
+        return -1;
+    }
+    return 0;
 }
 
 
@@ -301,18 +312,23 @@ int32_t FMC_ReadConfig(uint32_t *u32Config, uint32_t u32Count)
 /**
   * @brief    Write User Configuration 
   * @param    u32Config: The word array to store data.
-  * @param    u32Count: Maximum length of "u32Config".
+  * @param    u32Count: Length of "u32Config" (1 or 2)
   * @retval   0:  Success
   * @retval   -1: Failed
   */
 int32_t FMC_WriteConfig(uint32_t *u32Config, uint32_t u32Count)
 {       
-    FMC_EnableConfigUpdate();   
-    FMC_Erase(FMC_CONFIG_BASE);
-    FMC_Write(FMC_CONFIG_BASE, u32Config[0]);
-    FMC_Write(FMC_CONFIG_BASE+4, u32Config[1]);
+    int32_t retval = 0;
+    FMC_EnableConfigUpdate();
+    if(FMC_Erase(FMC_CONFIG_BASE) < 0)
+        retval = -1;
+    if(FMC_Write(FMC_CONFIG_BASE, u32Config[0]) < 0)
+        retval = -1;
+    if(u32Count >= 2)
+        if(FMC_Write(FMC_CONFIG_BASE+4, u32Config[1]) < 0)
+            retval = -1;
     FMC_DisableConfigUpdate();
-    return 0;
+    return retval;
 }
 
 

@@ -89,7 +89,7 @@ extern uint32_t FMC_ReadUCID(uint32_t u32Index);
 extern uint32_t FMC_ReadUID(uint32_t u32Index);
 extern uint32_t FMC_ReadDataFlashBaseAddr(void);
 extern void FMC_SetVectorPageAddr(uint32_t u32PageAddr);
-extern void FMC_Write(uint32_t u32Addr, uint32_t u32Data);
+extern int32_t FMC_Write(uint32_t u32Addr, uint32_t u32Data);
 extern int32_t FMC_ReadConfig(uint32_t *u32Config, uint32_t u32Count);
 extern int32_t FMC_WriteConfig(uint32_t *u32Config, uint32_t u32Count);
 
