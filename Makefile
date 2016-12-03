@@ -77,12 +77,15 @@ clean:
 	-rm -f $(SECONDARY_SIZE) $(OBJS) $(OBJS:.o=.d) $(SECONDARY_FLASH) bradwii-x4-gcc bradwii-x4-gcc.map
 	-@echo ' '
 
+unlock:
+	-openocd -f ./mini51_stlinkv2.cfg -c "init; halt; ReadConfigRegs; ChipErase ; WriteStdConfig ; reset ; shutdown"
+
 # TODO: package up openocd changes
 flash: bradwii-x4-gcc
-	-openocd -f target/mini51_stlinkv2.cfg -c "init; halt; flash write_image erase bradwii-x4-gcc 0; reset; shutdown"
+	-openocd -f ./mini51_stlinkv2.cfg -c "init; halt; flash write_image erase bradwii-x4-gcc 0; reset; shutdown"
 
 debug:
-	-openocd -f target/mini51_stlinkv2.cfg -c "init; halt; arm semihosting enable; reset run"
+	-openocd -f ./mini51_stlinkv2.cfg -c "init; halt; arm semihosting enable; reset run"
 
 .PHONY: all clean dependents
 .SECONDARY:
